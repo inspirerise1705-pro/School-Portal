@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { QuizQuestion } from "./types";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 function getFallbackQuiz(topic: string, count: number): QuizQuestion[] {
@@ -33,7 +33,7 @@ export async function generateQuiz(topic: string, count: number = 5): Promise<Qu
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",

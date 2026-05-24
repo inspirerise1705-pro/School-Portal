@@ -2,36 +2,53 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GraduationCap, School, ArrowRight, Lock, Mail, Loader2 } from 'lucide-react';
+import { GraduationCap, School, ArrowRight, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { supabase } from './lib/supabase';
 
 interface LoginProps {
   onLogin: () => void;
 }
 
 export default function Login({ onLogin }: LoginProps) {
-  const [email, setEmail] = useState('teacher@educrystal.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [error, setError] = useState('');
   const [view, setView] = useState<'login' | 'forgot'>('login');
   const [recoverySent, setRecoverySent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsAuthenticating(true);
-    // Simulate auth network request
-    setTimeout(() => {
-      onLogin();
+
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (authError) {
+      setError(authError.message);
       setIsAuthenticating(false);
-    }, 1800);
+      return;
+    }
+
+    onLogin();
   };
 
-  const handleRecover = (e: React.FormEvent) => {
+  const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsAuthenticating(true);
-    setTimeout(() => {
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (resetError) {
+      setError(resetError.message);
+    } else {
       setRecoverySent(true);
-      setIsAuthenticating(false);
-    }, 1500);
+    }
+
+    setIsAuthenticating(false);
   };
 
   return (
@@ -60,7 +77,7 @@ export default function Login({ onLogin }: LoginProps) {
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white">
                 <School className="h-5 w-5" />
               </div>
-              Scrolls School
+              InspireRise
             </div>
             <p className="max-w-xl text-sm text-white/70">
               Teacher access to campus workflows that feel polished, secure, and ready for every lesson.
@@ -98,6 +115,17 @@ export default function Login({ onLogin }: LoginProps) {
                     onSubmit={handleSubmit}
                     className="space-y-6"
                   >
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+                      >
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        {error}
+                      </motion.div>
+                    )}
+
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-white/60 tracking-[0.35em] ml-1">Email address</label>
                       <div className="relative">
@@ -105,10 +133,10 @@ export default function Login({ onLogin }: LoginProps) {
                         <input
                           type="email"
                           required
-                          placeholder="teacher@scrollsschool.edu"
+                          placeholder="teacher@school.edu"
                           className="w-full rounded-3xl border border-white/10 bg-slate-950/70 px-12 py-4 text-sm font-semibold text-white placeholder:text-white/30 focus:border-primary-400 focus:outline-none focus:ring-4 focus:ring-primary-400/10 transition"
                           value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          onChange={(e) => { setEmail(e.target.value); setError(''); }}
                         />
                       </div>
                     </div>
@@ -118,7 +146,7 @@ export default function Login({ onLogin }: LoginProps) {
                         <label className="text-[10px] font-black uppercase text-white/60 tracking-[0.35em] ml-1">Password</label>
                         <button
                           type="button"
-                          onClick={() => setView('forgot')}
+                          onClick={() => { setView('forgot'); setError(''); }}
                           className="text-[10px] font-black uppercase text-primary-200 hover:text-primary-100 transition"
                         >
                           Forgot password?
@@ -132,7 +160,7 @@ export default function Login({ onLogin }: LoginProps) {
                           placeholder="••••••••"
                           className="w-full rounded-3xl border border-white/10 bg-slate-950/70 px-12 py-4 text-sm font-semibold text-white placeholder:text-white/30 focus:border-primary-400 focus:outline-none focus:ring-4 focus:ring-primary-400/10 transition"
                           value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          onChange={(e) => { setPassword(e.target.value); setError(''); }}
                         />
                       </div>
                     </div>
@@ -161,6 +189,16 @@ export default function Login({ onLogin }: LoginProps) {
                   >
                     {!recoverySent ? (
                       <form onSubmit={handleRecover} className="space-y-6">
+                        {error && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+                          >
+                            <AlertCircle className="h-4 w-4 shrink-0" />
+                            {error}
+                          </motion.div>
+                        )}
                         <div className="space-y-2">
                           <label className="text-[10px] font-black uppercase text-white/60 tracking-[0.35em] ml-1">Recovery Email</label>
                           <div className="relative">
@@ -169,6 +207,8 @@ export default function Login({ onLogin }: LoginProps) {
                               type="email"
                               required
                               placeholder="Enter your email"
+                              value={email}
+                              onChange={(e) => { setEmail(e.target.value); setError(''); }}
                               className="w-full rounded-3xl border border-white/10 bg-slate-950/70 px-12 py-4 text-sm font-semibold text-white placeholder:text-white/30 focus:border-primary-400 focus:outline-none focus:ring-4 focus:ring-primary-400/10 transition"
                             />
                           </div>
@@ -176,13 +216,13 @@ export default function Login({ onLogin }: LoginProps) {
                         <button
                           type="submit"
                           disabled={isAuthenticating}
-                          className="w-full rounded-3xl bg-primary-500 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-70"
+                          className="w-full rounded-3xl bg-primary-500 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-70 flex items-center justify-center gap-3"
                         >
                           {isAuthenticating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Recovery Link'}
                         </button>
                         <button
                           type="button"
-                          onClick={() => setView('login')}
+                          onClick={() => { setView('login'); setError(''); }}
                           className="w-full rounded-3xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
                         >
                           Back to Login
@@ -199,7 +239,7 @@ export default function Login({ onLogin }: LoginProps) {
                         </div>
                         <button
                           type="button"
-                          onClick={() => { setView('login'); setRecoverySent(false); }}
+                          onClick={() => { setView('login'); setRecoverySent(false); setError(''); }}
                           className="w-full rounded-3xl bg-white/10 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-white/20"
                         >
                           Return to Login
@@ -211,7 +251,7 @@ export default function Login({ onLogin }: LoginProps) {
               </AnimatePresence>
 
               <div className="mt-10 pt-6 border-t border-white/10 text-center text-xs uppercase tracking-[0.35em] text-white/50">
-                Scrolls School Secure Access
+                InspireRise Secure Access
               </div>
             </div>
           </div>

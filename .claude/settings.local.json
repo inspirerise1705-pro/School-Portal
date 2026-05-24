@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /c/Users/Admin/Downloads/\"Teacher Flow\" && find . -type f -name \"*.json\" -o -name \"*.jsx\" -o -name \"*.js\" -o -name \"*.tsx\" -o -name \"*.ts\" -o -name \".env*\" | head -50)",
+      "Read(//c/c/Users/Admin/Downloads/**)",
+      "Bash(taskkill /PID 8348 /F)"
+    ]
+  }
+}

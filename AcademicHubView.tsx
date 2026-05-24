@@ -281,74 +281,79 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
         </div>
       </div>
 
+      {/* Mobile Tab Strip */}
+      <div className="lg:hidden flex gap-2 overflow-x-auto pb-1 scrollbar-hide shrink-0">
+        {(['upload', 'task', 'quiz', 'paper'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => { setActiveTab(tab); setEditingPaper(false); setAiQuiz(null); setQuizTopic(''); }}
+            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-left whitespace-nowrap shrink-0 ${
+              activeTab === tab
+                ? 'bg-neutral-900 dark:bg-primary-500 text-white shadow-lg'
+                : 'bg-white/90 dark:bg-neutral-950/90 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-white/10'
+            }`}
+          >
+            <div className={`p-1.5 rounded-lg ${activeTab === tab ? 'bg-white/10' : 'bg-neutral-100 dark:bg-neutral-800'}`}>
+              {tab === 'upload' && <Upload className="w-3.5 h-3.5" />}
+              {tab === 'task' && <Plus className="w-3.5 h-3.5" />}
+              {tab === 'quiz' && <BrainCircuit className="w-3.5 h-3.5" />}
+              {tab === 'paper' && <FileBadge className="w-3.5 h-3.5" />}
+            </div>
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-widest leading-none">
+                {tab === 'upload' ? 'Upload' : tab === 'task' ? 'Assignment' : tab === 'quiz' ? 'AI Quiz' : 'Exam Paper'}
+              </p>
+              <p className="text-[8px] font-bold mt-0.5 opacity-70">
+                {tab === 'upload' ? 'Library' : tab === 'task' ? 'Assign' : tab === 'quiz' ? 'Builder' : 'Exam'}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+
       {/* Main Workflow Area */}
       <div className="flex-1 flex gap-3 md:gap-6 min-h-0 overflow-hidden">
-        
-        {/* Sidebar Toggle Button - Mobile */}
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="lg:hidden flex items-center justify-center w-10 h-10 bg-neutral-900 dark:bg-primary-500 text-white rounded-xl shrink-0 hover:scale-105 transition-all"
-        >
-          {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-        
-        {/* Navigation Sidebar */}
-        <AnimatePresence>
-          {(isSidebarOpen || window.innerWidth >= 1024) && (
-            <motion.div
-              initial={{ x: -200, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -200, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="lg:flex flex-col gap-2 min-h-0 pb-2 lg:pb-0 lg:pr-2 custom-scrollbar scrollbar-hide w-40 lg:w-48 shrink-0 overflow-visible overflow-y-auto"
+
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:flex flex-col gap-2 min-h-0 pb-2 pr-2 scrollbar-hide w-48 shrink-0 overflow-y-auto">
+          {(['upload', 'task', 'quiz', 'paper'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => { setActiveTab(tab); setEditingPaper(false); setAiQuiz(null); setQuizTopic(''); }}
+              className={`flex items-center gap-2 px-4 py-3 rounded-2xl transition-all duration-300 text-left relative overflow-hidden ${
+                activeTab === tab
+                  ? 'bg-neutral-900 dark:bg-primary-500 text-white shadow-xl scale-105 z-10'
+                  : 'bg-white/90 dark:bg-neutral-950/90 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-white/10'
+              }`}
             >
-              {(['upload', 'task', 'quiz', 'paper'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => {
-                    setActiveTab(tab);
-                    setEditingPaper(false);
-                    setAiQuiz(null);
-                    setQuizTopic('');
-                    if (window.innerWidth < 1024) setIsSidebarOpen(false);
-                  }}
-                  className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 rounded-xl md:rounded-2xl transition-all duration-300 text-left relative overflow-hidden text-[11px] md:text-sm ${
-                    activeTab === tab 
-                      ? 'bg-neutral-900 dark:bg-primary-500 text-white shadow-xl scale-105 z-10' 
-                      : 'bg-white/90 dark:bg-neutral-950/90 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-white/10'
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg md:rounded-xl ${activeTab === tab ? 'bg-white/10' : 'bg-neutral-100 dark:bg-neutral-900/80 group-hover:bg-neutral-200 dark:group-hover:bg-neutral-800'} transition-colors shrink-0`}>
-                    {tab === 'upload' && <Upload className="w-4 h-4" />}
-                    {tab === 'task' && <Plus className="w-4 h-4" />}
-                    {tab === 'quiz' && <BrainCircuit className="w-4 h-4" />}
-                    {tab === 'paper' && <FileBadge className="w-4 h-4" />}
-                  </div>
-                  <div className="min-w-0 pr-2">
-                    <p className="text-[9px] md:text-xs font-black uppercase tracking-widest leading-none truncate">{tab === 'upload' ? 'Upload' : tab === 'task' ? 'Assignment' : tab === 'quiz' ? 'AI Quiz' : 'Exam Paper'}</p>
-                    <p className={`text-[8px] md:text-[9px] font-bold mt-0.5 md:mt-1 opacity-90 truncate`}>
-                      {tab === 'upload' && 'Library'}
-                      {tab === 'task' && 'Assign'}
-                      {tab === 'quiz' && 'Builder'}
-                      {tab === 'paper' && 'Exam'}
-                    </p>
-                  </div>
-                  {activeTab === tab && (
-                    <div className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2">
-                      <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary-400 animate-pulse" />
-                    </div>
-                  )}
-                </button>
-              ))}
-              
-              <div className="hidden lg:flex mt-auto glass-card p-4 md:p-6 bg-primary-500/5 text-neutral-900 dark:text-primary-400 flex flex-col gap-2 overflow-hidden relative border-primary-500/10 rounded-2xl">
-                <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary-500 animate-pulse mb-1 md:mb-2" />
-                <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-100 leading-tight">Gen AI Assistant</p>
-                <p className="text-[10px] md:text-[11px] font-bold leading-relaxed">Optimized for CBSE/ICSE curriculum Grade {classes.find(c=>c.id===selectedClassId)?.name}.</p>
+              <div className={`p-2 rounded-xl ${activeTab === tab ? 'bg-white/10' : 'bg-neutral-100 dark:bg-neutral-900/80'} transition-colors shrink-0`}>
+                {tab === 'upload' && <Upload className="w-4 h-4" />}
+                {tab === 'task' && <Plus className="w-4 h-4" />}
+                {tab === 'quiz' && <BrainCircuit className="w-4 h-4" />}
+                {tab === 'paper' && <FileBadge className="w-4 h-4" />}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="min-w-0 pr-2">
+                <p className="text-xs font-black uppercase tracking-widest leading-none truncate">
+                  {tab === 'upload' ? 'Upload' : tab === 'task' ? 'Assignment' : tab === 'quiz' ? 'AI Quiz' : 'Exam Paper'}
+                </p>
+                <p className="text-[9px] font-bold mt-1 opacity-90 truncate">
+                  {tab === 'upload' ? 'Library' : tab === 'task' ? 'Assign' : tab === 'quiz' ? 'Builder' : 'Exam'}
+                </p>
+              </div>
+              {activeTab === tab && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
+                </div>
+              )}
+            </button>
+          ))}
+
+          <div className="mt-auto flex flex-col gap-2 p-4 bg-primary-500/5 border border-primary-500/10 rounded-2xl">
+            <Sparkles className="w-5 h-5 text-primary-500 animate-pulse" />
+            <p className="text-[9px] font-black uppercase tracking-widest">Gen AI Assistant</p>
+            <p className="text-[10px] font-bold leading-relaxed text-neutral-700 dark:text-neutral-300">Optimized for CBSE/ICSE curriculum Grade {classes.find(c=>c.id===selectedClassId)?.name}.</p>
+          </div>
+        </div>
 
         {/* Content Pane */}
         <div className="flex-1 glass-card p-3 md:p-6 bg-white/70 dark:bg-neutral-900/70 flex flex-col min-h-0 scrollbar-hide shadow-inner overflow-y-auto custom-scrollbar rounded-2xl md:rounded-3xl">
@@ -448,7 +453,7 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
                      </button>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto pr-2 space-y-4 md:space-y-6 custom-scrollbar min-h-0">
+                  <div className="flex-1 overflow-y-auto space-y-4 md:space-y-6 custom-scrollbar min-h-0 px-1">
                     {isGenerating ? (
                       <LoadingAI topic={quizTopic} />
                     ) : aiQuiz ? (
@@ -472,7 +477,7 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
                              </div>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                                {q.options?.map((opt, i) => (
-                                 <div key={i} className={`p-3 md:p-4 rounded-lg md:rounded-xl text-xs md:text-sm font-bold tracking-tight border transition-all cursor-default ${opt === q.correctAnswer ? 'bg-success-500/10 text-success-600 border-success-500/20' : 'bg-neutral-50 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 border-neutral-100 dark:border-white/5'}`}>
+                                 <div key={i} className={`p-3 md:p-4 rounded-lg md:rounded-xl text-xs md:text-sm font-bold tracking-tight transition-all cursor-default ${opt === q.correctAnswer ? 'bg-success-500/10 text-success-600 ring-1 ring-success-500/30' : 'bg-neutral-50 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 ring-1 ring-neutral-100 dark:ring-white/5'}`}>
                                    <span className="opacity-60 mr-2">{String.fromCharCode(65 + i)}.</span> {opt}
                                  </div>
                                ))}

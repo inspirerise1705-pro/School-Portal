@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  mockTeacher, 
-  mockClasses, 
-  mockStudents 
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from './lib/supabase';
+import {
+  mockTeacher,
+  mockClasses,
+  mockStudents
 } from './mockData';
 import { WALLPAPERS, WallpaperType } from './constants';
 
@@ -23,7 +25,8 @@ import TimelineView from './TimelineView';
 import NotificationsPage from './NotificationsPage';
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showStartupLoader, setShowStartupLoader] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -36,6 +39,25 @@ export default function App() {
   const wallpaperOverlay = isDark || currentWallpaper.textColor === 'light'
     ? 'linear-gradient(180deg, rgba(0,0,0,0.72), rgba(0,0,0,0.28) 32%, rgba(0,0,0,0.08) 55%, rgba(0,0,0,0.75) 100%)'
     : 'linear-gradient(180deg, rgba(255,255,255,0.24), rgba(255,255,255,0.08) 32%, rgba(255,255,255,0.02) 55%, rgba(255,255,255,0.18) 100%)';
+
+  // Real Supabase auth state listener
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+  };
 
   // Persistence for theme
   useEffect(() => {
@@ -57,12 +79,12 @@ export default function App() {
     setShowSidebar(false);
   };
 
-  if (showStartupLoader) {
+  if (showStartupLoader || authLoading) {
     return <LoadingScreen onComplete={() => setShowStartupLoader(false)} />;
   }
 
-  if (!isLoggedIn) {
-    return <Login onLogin={() => setIsLoggedIn(true)} />;
+  if (!session) {
+    return <Login onLogin={() => {}} />;
   }
 
   const renderView = () => {
@@ -95,7 +117,7 @@ export default function App() {
         return (
           <SettingsView 
             teacher={mockTeacher} 
-            onLogout={() => setIsLoggedIn(false)} 
+            onLogout={handleLogout}
             isDark={isDark}
             setIsDark={setIsDark}
             currentWallpaper={currentWallpaper}
@@ -126,7 +148,7 @@ export default function App() {
       
       <div className={`fixed inset-0 z-50 lg:relative lg:flex ${showSidebar ? 'flex' : 'hidden'}`}>
         <div className="absolute inset-0 bg-neutral-900/50 backdrop-blur-sm lg:hidden" onClick={() => setShowSidebar(false)} />
-        <Sidebar activeTab={activeTab} setActiveTab={handleNavigate} onLogout={() => setIsLoggedIn(false)} />
+        <Sidebar activeTab={activeTab} setActiveTab={handleNavigate} onLogout={handleLogout} />
       </div>
 
       <main className="flex-1 flex flex-col relative overflow-hidden z-10">
