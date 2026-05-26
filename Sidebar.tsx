@@ -41,14 +41,14 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout }: SidebarPr
         </div>
       </div>
 
-      <nav className="flex-1 space-y-2 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 space-y-2 overflow-y-auto overflow-x-visible scrollbar-hide">
         {menuItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
             className={`w-full flex items-center gap-4 px-5 py-4 rounded-[1.25rem] transition-all duration-500 group relative overflow-visible ${
               activeTab === item.id 
-                ? 'bg-neutral-900 dark:bg-primary-500 text-white shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)] scale-[1.02]' 
+                ? 'bg-neutral-900 dark:bg-primary-500 text-white shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)]'
                 : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 hover:text-neutral-900 dark:hover:text-white'
             }`}
           >

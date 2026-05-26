@@ -281,16 +281,16 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
         </div>
       </div>
 
-      {/* Mobile Tab Strip */}
-      <div className="lg:hidden flex gap-2 overflow-x-auto pb-1 scrollbar-hide shrink-0">
+      {/* Mobile Tab Strip — 4 equal columns, always all visible */}
+      <div className="lg:hidden grid grid-cols-4 gap-1.5 shrink-0">
         {(['upload', 'task', 'quiz', 'paper'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => { setActiveTab(tab); setEditingPaper(false); setAiQuiz(null); setQuizTopic(''); }}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-left whitespace-nowrap shrink-0 ${
+            className={`flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-xl transition-all ${
               activeTab === tab
                 ? 'bg-neutral-900 dark:bg-primary-500 text-white shadow-lg'
-                : 'bg-white/90 dark:bg-neutral-950/90 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-white/10'
+                : 'bg-white/90 dark:bg-neutral-950/90 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-white/10'
             }`}
           >
             <div className={`p-1.5 rounded-lg ${activeTab === tab ? 'bg-white/10' : 'bg-neutral-100 dark:bg-neutral-800'}`}>
@@ -299,14 +299,9 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
               {tab === 'quiz' && <BrainCircuit className="w-3.5 h-3.5" />}
               {tab === 'paper' && <FileBadge className="w-3.5 h-3.5" />}
             </div>
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-widest leading-none">
-                {tab === 'upload' ? 'Upload' : tab === 'task' ? 'Assignment' : tab === 'quiz' ? 'AI Quiz' : 'Exam Paper'}
-              </p>
-              <p className="text-[8px] font-bold mt-0.5 opacity-70">
-                {tab === 'upload' ? 'Library' : tab === 'task' ? 'Assign' : tab === 'quiz' ? 'Builder' : 'Exam'}
-              </p>
-            </div>
+            <p className="text-[8px] font-black uppercase tracking-wide leading-none text-center">
+              {tab === 'upload' ? 'Upload' : tab === 'task' ? 'Assign' : tab === 'quiz' ? 'AI Quiz' : 'Paper'}
+            </p>
           </button>
         ))}
       </div>
@@ -322,7 +317,7 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
               onClick={() => { setActiveTab(tab); setEditingPaper(false); setAiQuiz(null); setQuizTopic(''); }}
               className={`flex items-center gap-2 px-4 py-3 rounded-2xl transition-all duration-300 text-left relative overflow-hidden ${
                 activeTab === tab
-                  ? 'bg-neutral-900 dark:bg-primary-500 text-white shadow-xl scale-105 z-10'
+                  ? 'bg-neutral-900 dark:bg-primary-500 text-white shadow-lg'
                   : 'bg-white/90 dark:bg-neutral-950/90 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-white/10'
               }`}
             >
@@ -356,7 +351,7 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
         </div>
 
         {/* Content Pane */}
-        <div className="flex-1 glass-card p-3 md:p-6 bg-white/70 dark:bg-neutral-900/70 flex flex-col min-h-0 scrollbar-hide shadow-inner overflow-y-auto custom-scrollbar rounded-2xl md:rounded-3xl">
+        <div className="flex-1 p-3 md:p-5 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-2xl border border-white/20 dark:border-white/10 flex flex-col min-h-0 shadow-inner overflow-y-auto scrollbar-hide rounded-2xl md:rounded-3xl">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab + (editingPaper ? '-editing' : '')}
@@ -395,7 +390,7 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
               )}
 
               {activeTab === 'task' && (
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="flex-1">
                    <div className="max-w-2xl mx-auto py-4 space-y-4 md:space-y-6">
                       <div className="space-y-4 md:space-y-6">
                         <Field label="Assignment Topic" placeholder="e.g. Analysis of the Salt Satyagraha" />
@@ -453,7 +448,7 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
                      </button>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto space-y-4 md:space-y-6 custom-scrollbar min-h-0 px-1">
+                  <div className="flex-1 space-y-4 md:space-y-6">
                     {isGenerating ? (
                       <LoadingAI topic={quizTopic} />
                     ) : aiQuiz ? (
@@ -497,7 +492,7 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
               )}
 
               {activeTab === 'paper' && (
-                <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col min-h-0 pb-4 md:pb-6">
+                <div className="flex-1 flex flex-col pb-4 md:pb-6">
                    <div className="max-w-2xl mx-auto py-4 space-y-6 md:space-y-8 w-full">
                       <div className="text-center space-y-2">
                          <h3 className="text-2xl md:text-3xl font-black text-neutral-900 dark:text-white tracking-tighter uppercase leading-none">Exam Matrix</h3>
