@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  ClipboardCheck, 
-  Search, 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
-  ArrowLeft, 
+import {
+  ClipboardCheck,
+  Search,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ArrowLeft,
   ChevronRight,
   Send,
   Mail,
   Target,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import { Student } from './types';
 import { mockQuizSubmissions } from './mockData';
@@ -213,16 +214,28 @@ function QuizSubmissionList({ quiz, students, onSelectSubmission, onBack }: any)
 }
 
 function SubmissionDetail({ submission, student, onBack, onFinalize }: any) {
-  const [grading, setGrading] = useState(submission.score);
+  const aiDeterminations: Record<number, boolean> = { 1: true, 2: true, 3: true, 4: false, 5: true };
+  const [questionOverrides, setQuestionOverrides] = useState<Record<number, boolean>>(aiDeterminations);
+
+  const correctCount = Object.values(questionOverrides).filter(Boolean).length;
+  const [grading, setGrading] = useState(correctCount);
   const [reviewText, setReviewText] = useState('');
   const [emailParents, setEmailParents] = useState(false);
+
+  const handleToggleAnswer = (i: number) => {
+    setQuestionOverrides(prev => {
+      const next = { ...prev, [i]: !prev[i] };
+      setGrading(Object.values(next).filter(Boolean).length);
+      return next;
+    });
+  };
 
   return (
      <div className="p-4 md:p-12 space-y-12 h-full animate-in fade-in slide-in-from-bottom-8 duration-700 overflow-y-auto custom-scrollbar pb-32">
        <div className="flex items-center justify-between py-8">
          <div className="flex items-center gap-6">
-           <button 
-             onClick={onBack} 
+           <button
+             onClick={onBack}
              className="w-14 h-14 glass-panel bg-white dark:bg-neutral-900 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl group"
            >
               <ArrowLeft className="w-6 h-6 text-neutral-900 dark:text-white group-hover:-translate-x-1 transition-transform" />
@@ -242,7 +255,7 @@ function SubmissionDetail({ submission, student, onBack, onFinalize }: any) {
           <div className="xl:col-span-8 space-y-10">
              <div className="glass-card p-10 md:p-14 bg-white/70 dark:bg-neutral-900/60 border-none shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 primary-gradient blur-[100px] opacity-10 -mr-32 -mt-32 rounded-full pointer-events-none" />
-                
+
                 <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12 mb-14 relative z-10">
                    <div className="relative group">
                      <div className="absolute -inset-1 bg-primary-500 blur opacity-20 group-hover:opacity-100 transition-all rounded-[2.5rem]" />
@@ -259,25 +272,65 @@ function SubmissionDetail({ submission, student, onBack, onFinalize }: any) {
                     Assigned Questions
                  </h3>
                  <div className="grid grid-cols-1 gap-4">
-                   {[1,2,3,4,5].map(i => (
-                     <div key={i} className="p-6 glass-panel bg-neutral-50/50 dark:bg-white/5 border-none space-y-4 hover:bg-white dark:hover:bg-neutral-800 transition-all shadow-md group/q rounded-2xl">
-                        <div className="flex justify-between items-start gap-4">
-                           <div className="space-y-1">
-                              <span className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Question {i}</span>
-                              <p className="font-black text-lg text-neutral-900 dark:text-white tracking-tight leading-snug">What layer of the atmosphere is closest to Earth?</p>
-                           </div>
-                           <span className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-md ${i === 4 ? 'bg-error-500 text-white shadow-error-500/20' : 'bg-success-500 text-white shadow-success-500/20'}`}>
-                              {i === 4 ? 'Incorrect' : 'Correct'}
-                           </span>
-                        </div>
-                        <div className="space-y-2">
-                           <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400">Student's Answer</span>
-                           <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400 bg-white/50 dark:bg-black/20 p-4 rounded-xl border border-neutral-100 dark:border-white/5 leading-relaxed">
-                              {i === 4 ? "The Stratosphere layer because it has less pressure." : "The Troposphere is the lowest layer where we live and breathe."}
-                           </p>
-                        </div>
-                     </div>
-                   ))}
+                   {[1,2,3,4,5].map(i => {
+                     const isAiCorrect = aiDeterminations[i];
+                     const isOverridden = questionOverrides[i] !== isAiCorrect;
+                     const currentResult = questionOverrides[i];
+                     return (
+                       <div key={i} className="p-6 glass-panel bg-neutral-50/50 dark:bg-white/5 border-none space-y-4 hover:bg-white dark:hover:bg-neutral-800 transition-all shadow-md rounded-2xl">
+                          <div className="flex justify-between items-start gap-4">
+                             <div className="space-y-1 flex-1">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Question {i}</span>
+                                <p className="font-black text-lg text-neutral-900 dark:text-white tracking-tight leading-snug">What layer of the atmosphere is closest to Earth?</p>
+                             </div>
+                             <div className="flex flex-col items-end gap-2 shrink-0">
+                                {/* AI determination — always shown, read-only */}
+                                <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest ${
+                                  isAiCorrect
+                                    ? 'bg-success-500/15 text-success-700 dark:text-success-400'
+                                    : 'bg-error-500/15 text-error-700 dark:text-error-400'
+                                }`}>
+                                  <Sparkles className="w-3 h-3" />
+                                  AI: {isAiCorrect ? 'Correct' : 'Incorrect'}
+                                </span>
+                                {/* Override indicator or override button */}
+                                {isOverridden ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-sm ${
+                                      currentResult ? 'bg-success-500 text-white' : 'bg-error-500 text-white'
+                                    }`}>
+                                      Teacher: {currentResult ? 'Correct' : 'Incorrect'}
+                                    </span>
+                                    <button
+                                      onClick={() => handleToggleAnswer(i)}
+                                      className="text-[8px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-700 dark:hover:text-white underline underline-offset-2 transition-colors"
+                                    >
+                                      Undo
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => handleToggleAnswer(i)}
+                                    className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all hover:shadow-sm active:scale-95 ${
+                                      isAiCorrect
+                                        ? 'border-error-200 dark:border-error-500/30 text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-500/10'
+                                        : 'border-success-200 dark:border-success-500/30 text-success-600 dark:text-success-400 hover:bg-success-50 dark:hover:bg-success-500/10'
+                                    }`}
+                                  >
+                                    Mark as {isAiCorrect ? 'Incorrect' : 'Correct'}
+                                  </button>
+                                )}
+                             </div>
+                          </div>
+                          <div className="space-y-2">
+                             <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400">Student's Answer</span>
+                             <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400 bg-white/50 dark:bg-black/20 p-4 rounded-xl border border-neutral-100 dark:border-white/5 leading-relaxed">
+                                {i === 4 ? "The Stratosphere layer because it has less pressure." : "The Troposphere is the lowest layer where we live and breathe."}
+                             </p>
+                          </div>
+                       </div>
+                     );
+                   })}
                 </div>
              </div>
              </div>

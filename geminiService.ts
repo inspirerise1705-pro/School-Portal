@@ -1,7 +1,7 @@
 import { QuizQuestion } from "./types";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
 function getFallbackQuiz(topic: string, count: number): QuizQuestion[] {
   return Array.from({ length: count }, (_, i) => ({

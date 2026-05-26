@@ -75,6 +75,7 @@ export const mockTeacher: Teacher = {
       name: 'History',
       assignedClasses: [
         { classId: '6A', section: 'A' },
+        { classId: '7B', section: 'B' },
         { classId: '8A', section: 'A' },
       ],
     },
@@ -82,7 +83,7 @@ export const mockTeacher: Teacher = {
       id: 'sub2',
       name: 'Geography',
       assignedClasses: [
-        { classId: '7B', section: 'B' },
+        { classId: '6A', section: 'A' },
         { classId: '9C', section: 'C' },
       ],
     },
@@ -90,12 +91,13 @@ export const mockTeacher: Teacher = {
       id: 'sub3',
       name: 'Civics',
       assignedClasses: [
-        { classId: '6A', section: 'A' },
+        { classId: '7B', section: 'B' },
+        { classId: '8A', section: 'A' },
       ],
     },
     {
       id: 'sub4',
-      name: 'Physics',
+      name: 'Economics',
       assignedClasses: [
         { classId: '9C', section: 'C' },
       ],

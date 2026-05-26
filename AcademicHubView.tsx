@@ -16,6 +16,7 @@ import {
   Search,
   FileBadge,
   Eye,
+  EyeOff,
   CheckCircle,
   FileType,
   X,
@@ -50,6 +51,8 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiQuiz, setAiQuiz] = useState<QuizQuestion[] | null>(null);
   const [quizTopic, setQuizTopic] = useState('');
+  const [showAnswerKey, setShowAnswerKey] = useState(true);
+  const [questionCount, setQuestionCount] = useState(5);
   
   const [successState, setSuccessState] = useState<{ title: string; subtitle: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -84,8 +87,9 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
   async function handleGenerateQuiz() {
     if (!quizTopic) return;
     setIsGenerating(true);
+    setShowAnswerKey(true);
     try {
-      const result = await generateQuiz(quizTopic);
+      const result = await generateQuiz(quizTopic, questionCount);
       setAiQuiz(result);
     } finally {
       setIsGenerating(false);
@@ -343,11 +347,50 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
             </button>
           ))}
 
-          <div className="mt-auto flex flex-col gap-2 p-4 bg-primary-500/5 border border-primary-500/10 rounded-2xl">
-            <Sparkles className="w-5 h-5 text-primary-500 animate-pulse" />
-            <p className="text-[9px] font-black uppercase tracking-widest">Gen AI Assistant</p>
-            <p className="text-[10px] font-bold leading-relaxed text-neutral-700 dark:text-neutral-300">Optimized for CBSE/ICSE curriculum Grade {classes.find(c=>c.id===selectedClassId)?.name}.</p>
-          </div>
+          {/* Teaching Schedule Card */}
+          {(() => {
+            const subjectsByClass = teacher.subjects.reduce((acc, sub) => {
+              sub.assignedClasses.forEach(cls => {
+                if (!acc[cls.classId]) acc[cls.classId] = [];
+                acc[cls.classId].push(sub.name);
+              });
+              return acc;
+            }, {} as Record<string, string[]>);
+            const selectedClass = classes.find(c => c.id === selectedClassId);
+            const otherClasses = classes.filter(c => c.id !== selectedClassId && subjectsByClass[c.id]);
+            return (
+              <div className="mt-auto flex flex-col gap-3 p-4 bg-white/60 dark:bg-neutral-900/60 border border-neutral-100 dark:border-white/5 rounded-2xl">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-primary-500 shrink-0" />
+                  <p className="text-[9px] font-black uppercase tracking-widest text-neutral-900 dark:text-white">My Schedule</p>
+                </div>
+                {selectedClass && subjectsByClass[selectedClassId] && (
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-primary-500 mb-1.5">
+                      {selectedClass.name} {selectedClass.section}
+                      {teacher.classTeacherOf === selectedClassId ? ' · Class Teacher' : ''}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {subjectsByClass[selectedClassId].map(sub => (
+                        <span key={sub} className="text-[8px] font-bold bg-primary-500/10 text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded-md">{sub}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {otherClasses.length > 0 && (
+                  <div className="pt-2 border-t border-neutral-100 dark:border-white/5">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-neutral-400 mb-2">Other classes</p>
+                    {otherClasses.map(c => (
+                      <div key={c.id} className="flex items-start gap-2 mb-1.5">
+                        <span className="text-[8px] font-black text-neutral-500 dark:text-neutral-400 shrink-0 w-8">{c.name.replace('Class ', '')}{c.section}</span>
+                        <span className="text-[8px] font-bold text-neutral-600 dark:text-neutral-300 leading-tight">{(subjectsByClass[c.id] ?? []).join(', ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Content Pane */}
@@ -428,18 +471,18 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
 
               {activeTab === 'quiz' && (
                 <div className="flex-1 flex flex-col min-h-0 min-w-0">
-                  <div className="flex gap-2 md:gap-3 mb-4 md:mb-6">
+                  <div className="flex gap-2 md:gap-3 mb-2 md:mb-3">
                      <div className="flex-1 relative group">
                         <Sparkles className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 text-primary-500 w-4 h-4 md:w-5 md:h-5 animate-pulse" />
-                        <input 
-                          type="text" 
-                          placeholder="AI Helper: Quiz on Mughal Architecture..." 
+                        <input
+                          type="text"
+                          placeholder="AI Helper: Quiz on Mughal Architecture..."
                           value={quizTopic}
                           onChange={(e) => setQuizTopic(e.target.value)}
                           className="w-full pl-12 md:pl-16 pr-4 md:pr-8 py-3 md:py-4 glass-card bg-white dark:bg-neutral-800/50 border-none text-sm md:text-base font-black tracking-tight focus:outline-none focus:ring-4 focus:ring-primary-500/20 transition-all placeholder:text-neutral-400 dark:placeholder:text-neutral-600 shadow-lg rounded-xl md:rounded-2xl"
                         />
                      </div>
-                     <button 
+                     <button
                         onClick={handleGenerateQuiz}
                         disabled={isGenerating || !quizTopic}
                         className="px-4 md:px-6 bg-neutral-900 dark:bg-primary-500 text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg hover:scale-105 transition-all disabled:opacity-30 active:scale-95 group/gen"
@@ -448,13 +491,45 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
                      </button>
                   </div>
 
+                  {/* Question count selector */}
+                  <div className="flex items-center gap-2 mb-4 md:mb-5 flex-wrap">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mr-1">Questions</span>
+                    {[5, 10, 15, 20].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setQuestionCount(n)}
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black transition-all ${
+                          questionCount === n
+                            ? 'bg-neutral-900 dark:bg-primary-500 text-white shadow-md'
+                            : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-white/10 hover:border-neutral-400 dark:hover:border-white/30'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+
                   <div className="flex-1 space-y-4 md:space-y-6">
                     {isGenerating ? (
                       <LoadingAI topic={quizTopic} />
                     ) : aiQuiz ? (
                       <div className="space-y-4 md:space-y-6">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-400">{aiQuiz.length} questions generated</span>
+                          <button
+                            onClick={() => setShowAnswerKey(prev => !prev)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
+                              showAnswerKey
+                                ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400 border-primary-500/20'
+                                : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 border-neutral-200 dark:border-white/10'
+                            }`}
+                          >
+                            {showAnswerKey ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                            {showAnswerKey ? 'Teacher View' : 'Student Preview'}
+                          </button>
+                        </div>
                         {aiQuiz.map((q, idx) => (
-                          <motion.div 
+                          <motion.div
                             key={idx}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -472,14 +547,18 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
                              </div>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                                {q.options?.map((opt, i) => (
-                                 <div key={i} className={`p-3 md:p-4 rounded-lg md:rounded-xl text-xs md:text-sm font-bold tracking-tight transition-all cursor-default ${opt === q.correctAnswer ? 'bg-success-500/10 text-success-600 ring-1 ring-success-500/30' : 'bg-neutral-50 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 ring-1 ring-neutral-100 dark:ring-white/5'}`}>
+                                 <div key={i} className={`p-3 md:p-4 rounded-lg md:rounded-xl text-xs md:text-sm font-bold tracking-tight transition-all cursor-default ${
+                                   showAnswerKey && opt === q.correctAnswer
+                                     ? 'bg-success-500/10 text-success-600 ring-1 ring-success-500/30'
+                                     : 'bg-neutral-50 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 ring-1 ring-neutral-100 dark:ring-white/5'
+                                 }`}>
                                    <span className="opacity-60 mr-2">{String.fromCharCode(65 + i)}.</span> {opt}
                                  </div>
                                ))}
                              </div>
                           </motion.div>
                         ))}
-                        <button 
+                        <button
                           onClick={() => handleDistribute('Quiz')}
                           className="w-full py-3 md:py-4 bg-neutral-900 dark:bg-primary-500 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[9px] md:text-[10px] shadow-lg md:shadow-2xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-2 md:gap-3"
                         >
