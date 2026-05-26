@@ -80,7 +80,7 @@ export default function Login({ onLogin }: LoginProps) {
               InspireRise
             </div>
             <p className="max-w-xl text-sm text-white/70">
-              Teacher access to campus workflows that feel polished, secure, and ready for every lesson.
+              Your gateway to campus workflows — polished, secure, and built for every role.
             </p>
           </div>
 
@@ -89,8 +89,8 @@ export default function Login({ onLogin }: LoginProps) {
               <div className="space-y-4">
                 <p className="text-sm uppercase tracking-[0.35em] text-primary-200">school portal</p>
                 <h1 className="text-5xl md:text-6xl lg:text-[5.5rem] font-black tracking-[-0.04em] leading-[0.95]">
-                  Bring your classroom workflows
-                  <span className="block text-primary-300">into one premium hub.</span>
+                  Everything your school needs
+                  <span className="block text-primary-300">in one premium hub.</span>
                 </h1>
                 <p className="max-w-2xl text-base leading-8 text-white/75 md:text-lg">
                   Sign in to access schedules, reports, curriculum planning, and student insights through a modern teacher dashboard.
@@ -102,7 +102,7 @@ export default function Login({ onLogin }: LoginProps) {
               <div className="space-y-4 mb-6 text-center">
                 <p className="text-xs uppercase tracking-[0.35em] text-primary-200">Welcome back</p>
                 <h2 className="text-3xl font-black tracking-tight">Sign in to your portal</h2>
-                <p className="text-sm text-white/70">Use your school email to continue to the teacher workspace.</p>
+                <p className="text-sm text-white/70">Use your school email to access your workspace.</p>
               </div>
 
               <AnimatePresence mode="wait">

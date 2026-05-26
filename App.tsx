@@ -23,10 +23,13 @@ import QuizReportsView from './QuizReportsView';
 import SettingsView from './SettingsView';
 import TimelineView from './TimelineView';
 import NotificationsPage from './NotificationsPage';
+import StudentApp from './StudentApp';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [userRole, setUserRole] = useState<'teacher' | 'student' | null>(null);
+  const [roleLoading, setRoleLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showStartupLoader, setShowStartupLoader] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -49,14 +52,44 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (!session) setUserRole(null);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Role detection — runs whenever session changes
+  useEffect(() => {
+    if (!session) { setUserRole(null); return; }
+    setRoleLoading(true);
+    (async () => {
+      // Check teacher table first (id = auth.uid for teachers)
+      const { data: teacher } = await supabase
+        .from('teachers')
+        .select('id')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      if (teacher) { setUserRole('teacher'); setRoleLoading(false); return; }
+
+      // Check students table (user_id = auth.uid for students)
+      const { data: student } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      if (student) { setUserRole('student'); setRoleLoading(false); return; }
+
+      // Neither role found — sign out gracefully
+      await supabase.auth.signOut();
+      setUserRole(null);
+      setRoleLoading(false);
+    })();
+  }, [session]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
+    setUserRole(null);
   };
 
   // Persistence for theme
@@ -79,12 +112,17 @@ export default function App() {
     setShowSidebar(false);
   };
 
-  if (showStartupLoader || authLoading) {
+  if (showStartupLoader || authLoading || roleLoading) {
     return <LoadingScreen onComplete={() => setShowStartupLoader(false)} />;
   }
 
-  if (!session) {
+  if (!session || !userRole) {
     return <Login onLogin={() => {}} />;
+  }
+
+  // Students get their own completely separate app
+  if (userRole === 'student') {
+    return <StudentApp session={session} onLogout={handleLogout} />;
   }
 
   const renderView = () => {
