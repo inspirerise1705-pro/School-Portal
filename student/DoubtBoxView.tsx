@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { StudentProfile, DoubtData, SubjectData, ChapterData } from '../types';
+import { DUMMY_DOUBTS, DUMMY_SUBJECTS, DUMMY_CHAPTERS } from './dummyStudentData';
 
 interface Props {
   student:       StudentProfile;
@@ -46,8 +47,8 @@ export default function DoubtBoxView({ student }: Props) {
         .eq('school_id', student.school_id)
         .order('name'),
     ]);
-    setDoubts((dRes.data ?? []) as DoubtData[]);
-    setSubjects((sRes.data ?? []) as SubjectData[]);
+    setDoubts(dRes.data?.length ? (dRes.data as DoubtData[]) : DUMMY_DOUBTS);
+    setSubjects(sRes.data?.length ? (sRes.data as SubjectData[]) : DUMMY_SUBJECTS);
     setLoading(false);
   }, [student]);
 
@@ -60,7 +61,11 @@ export default function DoubtBoxView({ student }: Props) {
       .select('*')
       .eq('subject_id', formSubject)
       .order('number')
-      .then(({ data }) => { setFormChapters((data ?? []) as ChapterData[]); setFormChapter(''); });
+      .then(({ data }) => {
+        const fallback = DUMMY_CHAPTERS.filter(c => c.subject_id === formSubject);
+        setFormChapters(data?.length ? (data as ChapterData[]) : fallback);
+        setFormChapter('');
+      });
   }, [formSubject]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,7 +79,7 @@ export default function DoubtBoxView({ student }: Props) {
       subject_id: formSubject || null,
       chapter_id: formChapter || null,
       question:   formQuestion.trim(),
-    });
+    } as any);
     setFormQuestion('');
     setFormSubject('');
     setFormChapter('');
@@ -233,7 +238,7 @@ export default function DoubtBoxView({ student }: Props) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 60 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="relative z-10 w-full sm:max-w-lg glass-card rounded-t-3xl sm:rounded-3xl border border-white/10 p-5 sm:p-6 shadow-2xl backdrop-blur-2xl"
+              className="relative z-10 w-full sm:max-w-lg glass-card rounded-t-3xl rounded-b-none sm:rounded-3xl border border-white/10 p-5 sm:p-6 shadow-2xl backdrop-blur-2xl"
             >
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-black">Ask a Doubt</h2>

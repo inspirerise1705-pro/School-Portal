@@ -3,11 +3,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  BookOpen, ClipboardList, Filter, Search, Loader2,
-  Clock, ChevronDown, FileText, AlertCircle
+  BookOpen, ClipboardList, Search, Loader2,
+  Clock, FileText, Eye, Download, X,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { StudentProfile, StudyMaterialData, TaskData, SubjectData, ChapterData } from '../types';
+import { DUMMY_MATERIALS, DUMMY_TASKS, DUMMY_SUBJECTS, DUMMY_CHAPTERS } from './dummyStudentData';
 
 interface Props {
   student:       StudentProfile;
@@ -39,6 +40,8 @@ export default function StudyMaterialView({ student }: Props) {
   const [filterChapter, setFilterChapter] = useState('all');
   const [search, setSearch]               = useState('');
 
+  const [viewingMaterial, setViewingMaterial] = useState<StudyMaterialData | null>(null);
+
   const fetchData = useCallback(async () => {
     if (!student?.class_id) return;
     setLoading(true);
@@ -60,9 +63,11 @@ export default function StudyMaterialView({ student }: Props) {
         .eq('school_id', student.school_id),
     ]);
 
-    setMaterials((matRes.data ?? []) as StudyMaterialData[]);
-    setTasks((taskRes.data ?? []) as TaskData[]);
-    setSubjects((subRes.data ?? []) as SubjectData[]);
+    // If no DB materials, use dummy materials AND dummy subjects so IDs match for filtering
+    const hasDbMaterials = !!matRes.data?.length;
+    setMaterials(hasDbMaterials ? (matRes.data as StudyMaterialData[]) : DUMMY_MATERIALS);
+    setTasks(taskRes.data?.length ? (taskRes.data as TaskData[]) : DUMMY_TASKS);
+    setSubjects(hasDbMaterials && subRes.data?.length ? (subRes.data as SubjectData[]) : DUMMY_SUBJECTS);
     setLoading(false);
   }, [student]);
 
@@ -76,7 +81,11 @@ export default function StudyMaterialView({ student }: Props) {
       .select('*')
       .eq('subject_id', filterSubject)
       .order('number')
-      .then(({ data }) => { setChapters((data ?? []) as ChapterData[]); setFilterChapter('all'); });
+      .then(({ data }) => {
+        const fallback = DUMMY_CHAPTERS.filter(c => c.subject_id === filterSubject);
+        setChapters(data?.length ? (data as ChapterData[]) : fallback);
+        setFilterChapter('all');
+      });
   }, [filterSubject]);
 
   const filterItems = <T extends { title: string; subject_id?: string; chapter_id?: string }>(items: T[]) =>
@@ -171,7 +180,8 @@ export default function StudyMaterialView({ student }: Props) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04 }}
                       whileHover={{ y: -2 }}
-                      className="glass-card rounded-2xl border border-white/10 p-4 sm:p-5 flex flex-col gap-3"
+                      className="glass-card rounded-2xl border border-white/10 p-4 sm:p-5 flex flex-col gap-3 cursor-pointer"
+                      onClick={() => setViewingMaterial(m)}
                     >
                       <div className="flex items-start gap-3">
                         <div
@@ -197,12 +207,29 @@ export default function StudyMaterialView({ student }: Props) {
                         </div>
                       </div>
                       {m.description && (
-                        <p className="text-xs text-white/50 leading-relaxed line-clamp-3">{m.description}</p>
+                        <p className="text-xs text-white/50 leading-relaxed line-clamp-2">{m.description}</p>
                       )}
-                      <p className="text-[11px] text-white/30 flex items-center gap-1 mt-auto">
-                        <Clock className="h-3 w-3" />
-                        {new Date(m.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </p>
+                      <div className="flex items-center gap-2 pt-2 border-t border-white/8 mt-auto">
+                        <p className="text-[11px] text-white/30 flex items-center gap-1 flex-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(m.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                        <span className="flex items-center gap-1 rounded-xl bg-blue-500/15 px-2.5 py-1 text-[11px] font-bold text-blue-400">
+                          <Eye className="h-3 w-3" /> View
+                        </span>
+                        {m.file_url && m.file_url !== '#' && (
+                          <a
+                            href={m.file_url}
+                            download
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="flex items-center justify-center h-7 w-7 rounded-xl bg-white/10 text-white/50 hover:bg-white/15 hover:text-white transition"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
                     </motion.div>
                   ))}
                 </AnimatePresence>
@@ -268,6 +295,99 @@ export default function StudyMaterialView({ student }: Props) {
           )}
         </>
       )}
+
+      {/* Material Viewer Modal */}
+      <AnimatePresence>
+        {viewingMaterial && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          >
+            <motion.div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setViewingMaterial(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 60 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 60 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="relative z-10 w-full sm:max-w-lg glass-card rounded-t-3xl rounded-b-none sm:rounded-3xl border border-white/10 p-5 sm:p-6 shadow-2xl"
+            >
+              {/* Modal header */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0 pr-3">
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {viewingMaterial.subjects?.name && (
+                      <span
+                        className="rounded-lg px-2 py-0.5 text-[11px] font-black"
+                        style={{ background: `${viewingMaterial.subjects.color}25`, color: viewingMaterial.subjects.color }}
+                      >
+                        {viewingMaterial.subjects.name}
+                      </span>
+                    )}
+                    {viewingMaterial.chapters?.name && (
+                      <span className="rounded-lg bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-white/60">
+                        Ch. {viewingMaterial.chapters.name}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-base font-black leading-snug">{viewingMaterial.title}</h2>
+                </div>
+                <button
+                  onClick={() => setViewingMaterial(null)}
+                  className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-white/10 text-white/50 hover:text-white transition"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Document preview area */}
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 mb-4 min-h-[120px]">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2 font-bold">Document Preview</p>
+                {viewingMaterial.description ? (
+                  <p className="text-sm text-white/80 leading-relaxed">{viewingMaterial.description}</p>
+                ) : (
+                  <p className="text-sm text-white/30">No description available.</p>
+                )}
+                {(!viewingMaterial.file_url || viewingMaterial.file_url === '#') && (
+                  <p className="text-[11px] text-white/25 mt-3 pt-3 border-t border-white/8 italic">
+                    Demo mode — actual document not attached.
+                  </p>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center gap-3">
+                <p className="text-xs text-white/30 flex-1 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {new Date(viewingMaterial.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+                {viewingMaterial.file_url && viewingMaterial.file_url !== '#' ? (
+                  <a
+                    href={viewingMaterial.file_url}
+                    download
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 rounded-2xl bg-blue-500 px-4 py-2.5 text-sm font-black text-white hover:bg-blue-400 transition"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Download
+                  </a>
+                ) : (
+                  <button
+                    disabled
+                    className="flex items-center gap-2 rounded-2xl bg-white/8 px-4 py-2.5 text-sm font-bold text-white/35 cursor-not-allowed"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Download (Demo)
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

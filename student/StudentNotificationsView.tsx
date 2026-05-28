@@ -9,6 +9,7 @@ import {
 import { supabase } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import type { StudentProfile, NotificationData } from '../types';
+import { DUMMY_NOTIFICATIONS } from './dummyStudentData';
 
 interface Props {
   student:       StudentProfile;
@@ -45,14 +46,14 @@ export default function StudentNotificationsView({ session, onRead }: Props) {
       .select('*')
       .eq('recipient_id', session.user.id)
       .order('created_at', { ascending: false });
-    setNotifications((data ?? []) as NotificationData[]);
+    setNotifications(data?.length ? (data as NotificationData[]) : DUMMY_NOTIFICATIONS);
     setLoading(false);
   }, [session.user.id]);
 
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
   const markAsRead = async (id: string) => {
-    await supabase.from('notifications').update({ read: true }).eq('id', id);
+    await (supabase as any).from('notifications').update({ read: true }).eq('id', id);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     onRead();
   };
@@ -61,7 +62,7 @@ export default function StudentNotificationsView({ session, onRead }: Props) {
     setMarkingAll(true);
     const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
     if (unreadIds.length > 0) {
-      await supabase
+      await (supabase as any)
         .from('notifications')
         .update({ read: true })
         .in('id', unreadIds);

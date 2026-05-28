@@ -65,9 +65,9 @@ export const mockClasses: ClassInfo[] = [
 ];
 
 export const mockTeacher: Teacher = {
-  name: 'Mrs. Anjali Sharma',
+  name: 'Ms. Sanjana Shah',
   role: 'Senior Academic Lead',
-  avatar: 'https://picsum.photos/seed/anjali/200/200',
+  avatar: 'https://picsum.photos/seed/Sanjana/200/200',
   classTeacherOf: '6A',
   subjects: [
     {

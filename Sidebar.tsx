@@ -1,13 +1,14 @@
 import { motion } from 'motion/react';
-import { 
-  LayoutDashboard, 
-  Users, 
-  BookOpen, 
-  Calendar, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  BookOpen,
+  Calendar,
+  Settings,
   LogOut,
   GraduationCap,
-  ClipboardCheck
+  ClipboardCheck,
+  MessageSquare
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -18,11 +19,12 @@ interface SidebarProps {
 
 const menuItems = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { id: 'students', icon: Users, label: 'Students' },
-  { id: 'academic', icon: BookOpen, label: 'Academics' },
-  { id: 'reports', icon: ClipboardCheck, label: 'Quiz Reports' },
-  { id: 'calendar', icon: Calendar, label: 'Calendar' },
-  { id: 'settings', icon: Settings, label: 'Settings' },
+  { id: 'students',  icon: Users,           label: 'Students'   },
+  { id: 'academic',  icon: BookOpen,         label: 'Academics'  },
+  { id: 'reports',   icon: ClipboardCheck,   label: 'Quiz Reports' },
+  { id: 'doubts',    icon: MessageSquare,    label: 'Doubts'     },
+  { id: 'calendar',  icon: Calendar,         label: 'Calendar'   },
+  { id: 'settings',  icon: Settings,         label: 'Settings'   },
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, onLogout }: SidebarProps) {

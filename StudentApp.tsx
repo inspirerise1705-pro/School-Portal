@@ -27,7 +27,7 @@ interface StudentAppProps {
 }
 
 export default function StudentApp({ session, onLogout }: StudentAppProps) {
-  const [activeTab, setActiveTab]   = useState('dashboard');
+  const [activeTab, setActiveTab]   = useState(() => localStorage.getItem('student_tab') || 'dashboard');
   const [showSidebar, setShowSidebar] = useState(false);
 
   // Student profile
@@ -44,10 +44,9 @@ export default function StudentApp({ session, onLogout }: StudentAppProps) {
   const [isDark, setIsDark]                 = useState(false);
   const [currentWallpaper, setCurrentWallpaper] = useState<WallpaperType>(WALLPAPERS[0]);
 
-  const wallpaperOverlay =
-    isDark || currentWallpaper.textColor === 'light'
-      ? 'linear-gradient(180deg,rgba(0,0,0,0.72),rgba(0,0,0,0.28) 32%,rgba(0,0,0,0.08) 55%,rgba(0,0,0,0.75) 100%)'
-      : 'linear-gradient(180deg,rgba(255,255,255,0.24),rgba(255,255,255,0.08) 32%,rgba(255,255,255,0.02) 55%,rgba(255,255,255,0.18) 100%)';
+  const wallpaperOverlay = isDark || currentWallpaper.textColor === 'light'
+    ? 'linear-gradient(180deg, rgba(0,0,0,0.72), rgba(0,0,0,0.28) 32%, rgba(0,0,0,0.08) 55%, rgba(0,0,0,0.75) 100%)'
+    : 'linear-gradient(180deg, rgba(255,255,255,0.24), rgba(255,255,255,0.08) 32%, rgba(255,255,255,0.02) 55%, rgba(255,255,255,0.18) 100%)';
 
   // ── Fetch student profile + credits ──────────────────────────
   useEffect(() => {
@@ -64,12 +63,12 @@ export default function StudentApp({ session, onLogout }: StudentAppProps) {
   }, [session.user.id]);
 
   const refreshCredits = useCallback(async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('user_credit_balances')
       .select('balance')
       .eq('user_id', session.user.id)
       .maybeSingle();
-    if (data) setCreditBalance(data.balance ?? 0);
+    if (data) setCreditBalance((data as any).balance ?? 0);
   }, [session.user.id]);
 
   useEffect(() => { refreshCredits(); }, [refreshCredits]);
@@ -93,7 +92,7 @@ export default function StudentApp({ session, onLogout }: StudentAppProps) {
     description: string,
   ): Promise<boolean> => {
     if (creditBalance < amount) return false;
-    const { data, error } = await supabase.rpc('deduct_credits', {
+    const { data, error } = await (supabase as any).rpc('deduct_credits', {
       p_user_id:     session.user.id,
       p_amount:      amount,
       p_action_type: actionType,
@@ -104,14 +103,16 @@ export default function StudentApp({ session, onLogout }: StudentAppProps) {
     return true;
   }, [creditBalance, session.user.id]);
 
-  // ── Demo credit purchase ──────────────────────────────────────
+  // ── Credit purchase ───────────────────────────────────────────
+  // Always update balance optimistically; RPC syncs to DB when available.
   const addCredits = useCallback(async (amount: number, packageName: string) => {
-    const { data } = await supabase.rpc('add_credits', {
+    setCreditBalance(prev => prev + amount);          // instant UI update
+    const { data } = await (supabase as any).rpc('add_credits', {
       p_user_id:     session.user.id,
       p_amount:      amount,
       p_description: `Purchased: ${packageName}`,
     });
-    if (data && data !== -1) setCreditBalance(data as number);
+    if (data && data !== -1) setCreditBalance(data as number); // sync with DB value
   }, [session.user.id]);
 
   // ── Theme persistence ─────────────────────────────────────────
@@ -121,6 +122,7 @@ export default function StudentApp({ session, onLogout }: StudentAppProps) {
 
   const handleNavigate = (tab: string) => {
     setActiveTab(tab);
+    localStorage.setItem('student_tab', tab);
     setShowSidebar(false);
   };
 

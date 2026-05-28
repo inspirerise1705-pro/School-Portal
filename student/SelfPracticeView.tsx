@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { generatePracticeQuiz } from '../geminiService';
 import { CREDIT_COSTS } from '../types';
 import type { StudentProfile, SubjectData, ChapterData, QuizQuestion } from '../types';
+import { DUMMY_SUBJECTS, DUMMY_CHAPTERS } from './dummyStudentData';
 import CreditPurchaseModal from './CreditPurchaseModal';
 
 interface Props {
@@ -56,24 +57,27 @@ export default function SelfPracticeView({ student, creditBalance, deductCredits
       .eq('school_id', student.school_id)
       .order('name')
       .then(({ data }) => {
-        if (data) setSubjects(data as SubjectData[]);
+        setSubjects(data?.length ? (data as SubjectData[]) : DUMMY_SUBJECTS);
         setLoading(false);
       });
   }, [student.school_id]);
 
-  const loadChapters = async (subjectId: string) => {
+  const loadChapters = async (subjectId: string, subjectName: string) => {
     const { data } = await supabase
       .from('chapters')
       .select('*')
       .eq('subject_id', subjectId)
       .order('number');
-    setChapters((data ?? []) as ChapterData[]);
+    if (data?.length) { setChapters(data as ChapterData[]); return; }
+    // Name-based fallback: match DB subject name → dummy subject ID → dummy chapters
+    const dummySub = DUMMY_SUBJECTS.find(s => s.name === subjectName);
+    setChapters(dummySub ? DUMMY_CHAPTERS.filter(c => c.subject_id === dummySub.id) : []);
   };
 
   const handleSelectSubject = async (s: SubjectData) => {
     setSelectedSubject(s);
     setSelectedChapter(null);
-    await loadChapters(s.id);
+    await loadChapters(s.id, s.name);
     setStep('chapter');
   };
 

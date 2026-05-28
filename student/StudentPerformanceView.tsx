@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { supabase } from '../lib/supabase';
 import type { StudentProfile, QuizSubmissionData, AttendanceRecord } from '../types';
+import { DUMMY_SUBMISSIONS, DUMMY_ATTENDANCE, DUMMY_SUBJECT_AVGS } from './dummyStudentData';
 
 interface Props {
   student:       StudentProfile;
@@ -61,8 +62,8 @@ export default function StudentPerformanceView({ student }: Props) {
         .order('date'),
     ]);
 
-    setSubmissions((subRes.data ?? []) as QuizSubmissionData[]);
-    setAttendance((attRes.data ?? []) as AttendanceRecord[]);
+    setSubmissions(subRes.data?.length ? (subRes.data as QuizSubmissionData[]) : DUMMY_SUBMISSIONS);
+    setAttendance(attRes.data?.length ? (attRes.data as AttendanceRecord[]) : DUMMY_ATTENDANCE);
     setLoading(false);
   }, [student]);
 
@@ -75,21 +76,25 @@ export default function StudentPerformanceView({ student }: Props) {
     score: s.total > 0 ? Math.round((s.score / s.total) * 100) : 0,
   }));
 
-  // Subject-wise averages (for bar chart)
-  const subjectMap = new Map<string, { name: string; color: string; scores: number[] }>();
+  // Subject-wise averages — all 7 subjects, quiz scores override dummy avgs where available
+  const subjectScores = new Map<string, number[]>();
   submissions.forEach(s => {
     const sub = (s as any).quizzes?.subjects;
-    if (!sub) return;
-    if (!subjectMap.has(sub.name)) {
-      subjectMap.set(sub.name, { name: sub.name, color: sub.color ?? '#3B82F6', scores: [] });
-    }
-    if (s.total > 0) subjectMap.get(sub.name)!.scores.push(Math.round((s.score / s.total) * 100));
+    if (!sub || !s.total) return;
+    if (!subjectScores.has(sub.name)) subjectScores.set(sub.name, []);
+    subjectScores.get(sub.name)!.push(Math.round((s.score / s.total) * 100));
   });
-  const subjectData = Array.from(subjectMap.values()).map(s => ({
-    subject: s.name,
-    avg:     s.scores.length ? Math.round(s.scores.reduce((a, b) => a + b, 0) / s.scores.length) : 0,
-    color:   s.color,
-  }));
+  const SHORT: Record<string, string> = {
+    Mathematics: 'Math', 'Social Studies': 'SST', Computer: 'Comp',
+    Sanskrit: 'Sanskrit', English: 'English', Science: 'Science', Hindi: 'Hindi',
+  };
+  const subjectData = DUMMY_SUBJECT_AVGS.map(d => {
+    const scores = subjectScores.get(d.name) ?? [];
+    const avg = scores.length
+      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : d.avg;
+    return { subject: SHORT[d.name] ?? d.name, avg, color: d.color };
+  });
 
   // Attendance for selected month
   const monthAtt = attendance.filter(a => new Date(a.date).getMonth() === activeMonth);
@@ -107,8 +112,8 @@ export default function StudentPerformanceView({ student }: Props) {
     .map(a => [new Date(a.date).getDate(), a.status]));
 
   const fees = feesStyle(student.fees_status);
-  const overall = submissions.length
-    ? Math.round(submissions.reduce((acc, s) => acc + (s.total > 0 ? (s.score / s.total) * 100 : 0), 0) / submissions.length)
+  const overall = subjectData.length
+    ? Math.round(subjectData.reduce((acc, d) => acc + d.avg, 0) / subjectData.length)
     : null;
 
   return (
@@ -128,7 +133,7 @@ export default function StudentPerformanceView({ student }: Props) {
               {
                 icon: Trophy, label: 'Overall Avg', color: 'bg-violet-500/20 text-violet-400',
                 value: overall !== null ? `${overall}%` : '—',
-                sub: `${submissions.length} quizzes graded`,
+                sub: 'All subjects avg',
               },
               {
                 icon: CheckCircle2, label: 'Attendance', color: 'bg-emerald-500/20 text-emerald-400',
@@ -195,15 +200,14 @@ export default function StudentPerformanceView({ student }: Props) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             {/* ── Subject Avg ── */}
-            {subjectData.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                className="glass-card rounded-2xl border border-white/10 p-4 sm:p-5"
-              >
-                <h2 className="text-sm font-black uppercase tracking-wider text-white/60 mb-4">Subject-wise Average</h2>
-                <div className="h-44 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={subjectData} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="glass-card rounded-2xl border border-white/10 p-4 sm:p-5"
+            >
+              <h2 className="text-sm font-black uppercase tracking-wider text-white/60 mb-4">Subject-wise Average</h2>
+              <div className="h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={subjectData} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                       <XAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -218,8 +222,7 @@ export default function StudentPerformanceView({ student }: Props) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </motion.div>
-            )}
+            </motion.div>
 
             {/* ── Attendance Calendar ── */}
             <motion.div

@@ -676,7 +676,7 @@ ON CONFLICT DO NOTHING;
 -- HOW TO ADD A TEACHER (run AFTER creating user in Supabase Auth):
 -- INSERT INTO public.teachers (id, school_id, name, email, role, class_teacher_of, subjects)
 -- VALUES ('<auth-user-id>', '00000000-0000-0000-0000-000000000001',
---         'Mrs. Anjali Sharma', 'teacher@school.edu', 'teacher', 'Class 8A',
+--         'Ms. Sanjana Shah', 'teacher@school.edu', 'teacher', 'Class 8A',
 --         ARRAY['Mathematics','Science']);
 -- INSERT INTO public.user_credit_balances (user_id, school_id, balance, total_allocated)
 -- VALUES ('<auth-user-id>', '00000000-0000-0000-0000-000000000001', 200, 200);

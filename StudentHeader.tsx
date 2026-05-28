@@ -1,10 +1,10 @@
 'use client';
 
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, Bell, Zap, Sun, Moon, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
-import type { StudentProfile, WallpaperType } from './types';
-import { WALLPAPERS } from './constants';
+import { Bell, Menu, Sun, Moon, Palette, GraduationCap, Zap } from 'lucide-react';
+import { WALLPAPERS, WallpaperType } from './constants';
+import type { StudentProfile } from './types';
 
 interface StudentHeaderProps {
   student:             StudentProfile | null;
@@ -19,13 +19,6 @@ interface StudentHeaderProps {
   setWallpaper:        (w: WallpaperType) => void;
 }
 
-// Credit badge colour based on balance
-function creditColor(balance: number) {
-  if (balance <= 0)  return 'bg-red-500/20 text-red-400 border-red-500/30';
-  if (balance <= 10) return 'bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse';
-  return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-}
-
 export default function StudentHeader({
   student,
   creditBalance,
@@ -38,135 +31,121 @@ export default function StudentHeader({
   setIsDark,
   setWallpaper,
 }: StudentHeaderProps) {
-  const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
+  const [isNoticeOpen, setIsNoticeOpen] = useState(false);
+
+  const firstName = student?.name?.split(' ')[0] ?? 'Student';
 
   const initials = student?.name
     ? student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
     : 'ST';
 
+  const creditCls =
+    creditBalance <= 0  ? 'text-red-400' :
+    creditBalance <= 10 ? 'text-amber-400' :
+    'text-emerald-400';
+
   return (
-    <header className="relative z-20 flex h-14 sm:h-16 items-center gap-3 px-3 sm:px-5 border-b border-white/10 backdrop-blur-xl bg-black/10 shrink-0">
-      {/* Hamburger — visible on mobile/tablet */}
-      <button
-        onClick={onToggleSidebar}
-        className="flex lg:hidden h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white/70 hover:bg-white/15 hover:text-white transition shrink-0"
-        aria-label="Open menu"
-      >
-        <Menu className="h-4 w-4" />
-      </button>
-
-      {/* Page breadcrumb / logo (mobile) */}
-      <div className="flex items-center gap-2 lg:hidden">
-        <span className="text-xs font-black uppercase tracking-[0.25em] text-white/50">InspireRise</span>
+    <header className="w-full flex items-center justify-between px-4 md:px-8 py-6 z-10 transition-colors">
+      {/* Left — hamburger + greeting */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={onToggleSidebar}
+          className="p-3 lg:hidden glass-panel bg-white/60 dark:bg-neutral-800/60 border-neutral-200 dark:border-white/10 hover:bg-white dark:hover:bg-neutral-700 transition-all shadow-md group active:scale-95"
+        >
+          <Menu className="w-6 h-6 text-neutral-900 dark:text-white group-hover:rotate-180 transition-transform" />
+        </button>
+        <div className="flex flex-col">
+          <h1 className="text-xl md:text-3xl font-black text-neutral-900 dark:text-white tracking-tighter leading-none">
+            Greetings, {firstName}
+          </h1>
+          <p className="text-neutral-700 dark:text-neutral-200 text-[10px] md:text-sm font-bold mt-2 decoration-primary-500/30 underline underline-offset-4 decoration-2 opacity-95">
+            Ready to learn something great today.
+          </p>
+        </div>
       </div>
-
-      {/* Spacer */}
-      <div className="flex-1" />
 
       {/* Right controls */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex items-center gap-2 md:gap-6">
 
-        {/* Credit balance badge */}
-        <motion.button
-          onClick={onOpenSettings}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-black transition ${creditColor(creditBalance)}`}
-          title="AI Credits"
-        >
-          <Zap className="h-3 w-3" />
-          <span className="hidden xs:inline">{creditBalance}</span>
-          <span className="hidden sm:inline text-[10px] opacity-60">credits</span>
-        </motion.button>
+        {/* Theme controls */}
+        <div className="items-center gap-3 hidden sm:flex mr-4 pr-6 border-r border-neutral-300 dark:border-white/10">
 
-        {/* Dark mode toggle */}
-        <motion.button
-          onClick={() => setIsDark(!isDark)}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.92 }}
-          className="h-9 w-9 flex items-center justify-center rounded-xl bg-white/10 text-white/70 hover:bg-white/15 hover:text-white transition"
-          title={isDark ? 'Light mode' : 'Dark mode'}
-        >
-          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </motion.button>
+          {/* Wallpaper picker */}
+          <div className="relative group/wp">
+            <button className="p-3 glass-panel bg-white/40 dark:bg-neutral-800/40 border-neutral-200 dark:border-white/10 hover:bg-white dark:hover:bg-neutral-700 transition-all shadow-sm active:scale-95 flex items-center justify-center">
+              <Palette className="w-5 h-5 text-neutral-900 dark:text-white" />
+            </button>
+            <div className="absolute right-0 top-full mt-4 w-72 p-4 glass-card bg-white/90 dark:bg-neutral-900/90 shadow-2xl opacity-0 translate-y-4 invisible group-hover/wp:opacity-100 group-hover/wp:translate-y-0 group-hover/wp:visible transition-all duration-300 z-50 border border-white/20">
+              <p className="text-[10px] font-black uppercase text-neutral-400 mb-3 tracking-widest px-2">Select Atmosphere</p>
+              <div className="grid grid-cols-2 gap-3">
+                {WALLPAPERS.map(wp => (
+                  <button
+                    key={wp.id}
+                    onClick={() => setWallpaper(wp)}
+                    className={`relative h-20 rounded-2xl overflow-hidden transition-all ${
+                      currentWallpaper.id === wp.id
+                        ? 'ring-2 ring-primary-500 scale-95 shadow-xl'
+                        : 'hover:scale-105 opacity-80 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={wp.url} alt={wp.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <div className="absolute inset-x-0 bottom-0 p-2 bg-black/60 backdrop-blur-md">
+                      <p className="text-[8px] font-black text-white uppercase tracking-widest truncate">{wp.name}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
-        {/* Wallpaper picker */}
-        <div className="relative">
-          <motion.button
-            onClick={() => setShowWallpaperPicker(v => !v)}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            className="hidden sm:flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden border border-white/20 hover:border-white/40 transition"
-            title="Change wallpaper"
-            style={{ background: currentWallpaper.gradient }}
-          />
-          <AnimatePresence>
-            {showWallpaperPicker && (
-              <motion.div
-                initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                className="absolute right-0 top-12 z-50 glass-card rounded-2xl border border-white/10 p-3 shadow-2xl backdrop-blur-2xl w-56"
-              >
-                <p className="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-2 px-1">Theme</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {WALLPAPERS.map(wp => (
-                    <button
-                      key={wp.id}
-                      onClick={() => { setWallpaper(wp); setShowWallpaperPicker(false); }}
-                      title={wp.name}
-                      className={`h-10 w-full rounded-xl border-2 transition ${
-                        currentWallpaper.id === wp.id ? 'border-blue-400 scale-105' : 'border-transparent hover:border-white/30'
-                      }`}
-                      style={{ background: wp.gradient }}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Dark mode toggle */}
+          <button
+            onClick={() => setIsDark(!isDark)}
+            className="group relative flex items-center gap-3 glass-panel bg-white/40 dark:bg-neutral-800/40 border-neutral-200 dark:border-white/10 p-1.5 px-3 rounded-2xl hover:bg-white dark:hover:bg-neutral-700 transition-all shadow-sm active:scale-95"
+          >
+            <div className={`w-12 h-6 rounded-full transition-all duration-500 relative flex items-center px-1 ${isDark ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-900'}`}>
+              <div className={`w-4 h-4 rounded-full bg-white shadow-xl transition-all duration-500 transform ${isDark ? 'translate-x-6' : 'translate-x-0'}`} />
+            </div>
+            {isDark ? <Moon className="w-4 h-4 text-neutral-900 dark:text-white" /> : <Sun className="w-4 h-4 text-neutral-900 dark:text-white" />}
+          </button>
         </div>
 
-        {/* Notifications */}
-        <motion.button
-          onClick={onOpenNotifications}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.92 }}
-          className="relative h-9 w-9 flex items-center justify-center rounded-xl bg-white/10 text-white/70 hover:bg-white/15 hover:text-white transition"
-          title="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-[9px] font-black text-white">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </motion.button>
+        {/* Notifications bell */}
+        <div className="relative">
+          <button
+            onClick={() => { setIsNoticeOpen(false); onOpenNotifications(); }}
+            className="p-3 md:p-4 glass-panel bg-white/40 dark:bg-neutral-800/40 border-neutral-200 dark:border-white/10 hover:bg-white dark:hover:bg-neutral-700 transition-all relative shadow-sm active:scale-95"
+          >
+            <Bell className="w-5 h-5 text-neutral-900 dark:text-white" />
+            {unreadCount > 0 && (
+              <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-primary-500 border-2 border-white dark:border-neutral-800 rounded-full animate-pulse shadow-lg" />
+            )}
+          </button>
+        </div>
 
-        {/* Avatar */}
-        <motion.button
-          onClick={onOpenSettings}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/30 border border-blue-400/30 text-blue-200 font-black text-xs hover:bg-blue-500/40 transition overflow-hidden"
-          title="Profile & Settings"
-        >
-          {student?.avatar ? (
-            <img src={student.avatar} alt={student.name} className="h-full w-full object-cover" />
-          ) : (
-            initials
-          )}
-        </motion.button>
+        {/* Student name + avatar */}
+        <div className="flex items-center gap-3 md:gap-6 pl-4 md:pl-8 border-l border-neutral-300 dark:border-white/10">
+          <div className="text-right hidden sm:block">
+            <p className="font-black text-sm md:text-base text-neutral-900 dark:text-white leading-tight">
+              {student?.name ?? 'Student'}
+            </p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400 mt-1 flex items-center justify-end gap-1">
+              <Zap className={`w-3 h-3 ${creditCls}`} />
+              <span className={creditCls}>{creditBalance} credits</span>
+            </p>
+          </div>
+          <div className="relative group cursor-pointer" onClick={onOpenSettings}>
+            <div className="absolute -inset-1 bg-primary-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-all" />
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl border-4 border-white dark:border-neutral-800 bg-blue-500/20 flex items-center justify-center relative z-10 shadow-2xl">
+              {student?.avatar ? (
+                <img src={student.avatar} alt={student.name} className="w-full h-full object-cover rounded-xl" />
+              ) : (
+                <span className="text-base font-black text-blue-400">{initials}</span>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* Click-outside to close wallpaper picker */}
-      {showWallpaperPicker && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowWallpaperPicker(false)}
-        />
-      )}
     </header>
   );
 }

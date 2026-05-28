@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { askAITutor, TutorMessage } from '../geminiService';
 import { CREDIT_COSTS } from '../types';
 import type { StudentProfile, SubjectData, ChapterData } from '../types';
+import { DUMMY_SUBJECTS, DUMMY_CHAPTERS } from './dummyStudentData';
 import CreditPurchaseModal from './CreditPurchaseModal';
 
 interface Props {
@@ -40,20 +41,22 @@ export default function AITutorView({ student, creditBalance, deductCredits, add
   useEffect(() => {
     supabase
       .from('subjects').select('*').eq('school_id', student.school_id).order('name')
-      .then(({ data }) => { if (data) setSubjects(data as SubjectData[]); });
+      .then(({ data }) => { setSubjects(data?.length ? (data as SubjectData[]) : DUMMY_SUBJECTS); });
   }, [student.school_id]);
 
-  const loadChapters = async (subjectId: string) => {
+  const loadChapters = async (subjectId: string, subjectName: string) => {
     const { data } = await supabase
       .from('chapters').select('*').eq('subject_id', subjectId).order('number');
-    setChapters((data ?? []) as ChapterData[]);
+    if (data?.length) { setChapters(data as ChapterData[]); return; }
+    const dummySub = DUMMY_SUBJECTS.find(s => s.name === subjectName);
+    setChapters(dummySub ? DUMMY_CHAPTERS.filter(c => c.subject_id === dummySub.id) : []);
   };
 
   const selectSubject = async (s: SubjectData) => {
     setSelectedSubject(s);
     setSelectedChapter(null);
     setChapters([]);
-    await loadChapters(s.id);
+    await loadChapters(s.id, s.name);
   };
 
   const selectChapter = (c: ChapterData) => {
@@ -98,8 +101,9 @@ export default function AITutorView({ student, creditBalance, deductCredits, add
 
     setMessages(prev => {
       const updated = [...prev];
-      const lastIdx = updated.findLastIndex(m => m.loading);
-      if (lastIdx !== -1) updated[lastIdx] = { role: 'model', text: reply };
+      for (let i = updated.length - 1; i >= 0; i--) {
+        if (updated[i].loading) { updated[i] = { role: 'model', text: reply }; break; }
+      }
       return updated;
     });
     setSending(false);
@@ -150,7 +154,7 @@ export default function AITutorView({ student, creditBalance, deductCredits, add
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden shrink-0 border-y border-white/10 bg-black/10 px-4 sm:px-6 lg:px-8 py-4"
+            className="overflow-hidden shrink-0 border-y border-white/10 bg-black/25 px-4 sm:px-6 lg:px-8 py-4"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
               {/* Subject list */}
@@ -300,7 +304,7 @@ export default function AITutorView({ student, creditBalance, deductCredits, add
       </div>
 
       {/* Input bar */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 border-t border-white/10 bg-black/10 shrink-0">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 border-t border-white/10 bg-black/30 shrink-0">
         {creditBalance < CREDIT_COSTS.AI_TUTOR_MESSAGE && (
           <div className="flex items-center justify-between rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-2 mb-3 text-xs text-red-400">
             <span className="flex items-center gap-1.5">
@@ -317,7 +321,7 @@ export default function AITutorView({ student, creditBalance, deductCredits, add
             disabled={!canChat || sending}
             rows={1}
             placeholder={canChat ? 'Ask anything about this chapter… (Enter to send)' : 'Select a topic first'}
-            className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 resize-none focus:border-blue-400/50 focus:outline-none focus:ring-2 focus:ring-blue-400/10 transition disabled:opacity-40 max-h-32 overflow-y-auto"
+            className="flex-1 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white placeholder:text-white/40 resize-none focus:border-blue-400/50 focus:outline-none focus:ring-2 focus:ring-blue-400/10 transition disabled:opacity-40 max-h-32 overflow-y-auto"
             style={{ height: '44px' }}
             onInput={e => {
               const t = e.currentTarget;

@@ -16,13 +16,6 @@ import {
   GraduationCap,
 } from 'lucide-react';
 
-interface NavItem {
-  id: string;
-  label: string;
-  icon: React.ElementType;
-  badge?: number;
-}
-
 interface StudentSidebarProps {
   activeTab:   string;
   onNavigate:  (tab: string) => void;
@@ -30,15 +23,15 @@ interface StudentSidebarProps {
   unreadCount: number;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard',    label: 'Dashboard',      icon: LayoutDashboard },
-  { id: 'quizzes',      label: 'My Quizzes',     icon: ClipboardList   },
-  { id: 'practice',     label: 'Self-Practice',  icon: Sparkles        },
-  { id: 'material',     label: 'Study Material', icon: BookOpen        },
-  { id: 'performance',  label: 'My Performance', icon: TrendingUp      },
-  { id: 'doubts',       label: 'Doubt Box',      icon: MessageCircle   },
-  { id: 'calendar',     label: 'Calendar',       icon: Calendar        },
-  { id: 'tutor',        label: 'AI Tutor',       icon: Bot             },
+const NAV_ITEMS = [
+  { id: 'dashboard',   label: 'Dashboard',      icon: LayoutDashboard },
+  { id: 'quizzes',     label: 'My Quizzes',     icon: ClipboardList   },
+  { id: 'practice',    label: 'Self-Practice',  icon: Sparkles        },
+  { id: 'material',    label: 'Study Material', icon: BookOpen        },
+  { id: 'performance', label: 'My Performance', icon: TrendingUp      },
+  { id: 'doubts',      label: 'Doubt Box',      icon: MessageCircle   },
+  { id: 'calendar',    label: 'Calendar',       icon: Calendar        },
+  { id: 'tutor',       label: 'AI Tutor',       icon: Bot             },
 ];
 
 export default function StudentSidebar({
@@ -47,111 +40,73 @@ export default function StudentSidebar({
   onLogout,
   unreadCount,
 }: StudentSidebarProps) {
+  const isActive = (id: string) => activeTab === id;
+
+  const navBtn = (id: string, label: string, Icon: React.ElementType, badge?: number) => (
+    <button
+      key={id}
+      onClick={() => onNavigate(id)}
+      className={`w-full flex items-center gap-4 px-5 py-4 rounded-[1.25rem] transition-all duration-500 group relative overflow-visible ${
+        isActive(id)
+          ? 'bg-neutral-900 dark:bg-primary-500 text-white shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)]'
+          : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 hover:text-neutral-900 dark:hover:text-white'
+      }`}
+    >
+      {isActive(id) && (
+        <motion.div
+          layoutId="student-active-pill"
+          className="absolute inset-0 bg-neutral-900 dark:bg-primary-500 rounded-[1.25rem] translate-z-0"
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        />
+      )}
+      <Icon className={`w-5 h-5 transition-all duration-500 group-hover:scale-110 relative z-10 ${
+        isActive(id) ? 'text-white' : 'text-neutral-400'
+      }`} />
+      <span className="font-black text-xs md:text-sm tracking-tight relative z-10 uppercase tracking-widest flex-1 text-left">
+        {label}
+      </span>
+      {badge !== undefined && badge > 0 && (
+        <span className="relative z-10 flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1.5 text-[10px] font-black text-white">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
+    </button>
+  );
+
   return (
-    <aside className="relative z-10 flex h-full w-64 shrink-0 flex-col glass-card border-r border-white/10 backdrop-blur-2xl py-5 px-3 gap-1">
+    <aside className="w-72 h-full bg-white/70 dark:bg-neutral-950/80 backdrop-blur-2xl border-r border-neutral-200 dark:border-white/5 flex flex-col p-8 z-10 transition-colors shadow-2xl lg:shadow-none">
       {/* Brand */}
-      <div className="flex items-center gap-3 px-3 pb-5 border-b border-white/10 mb-2">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400">
-          <GraduationCap className="h-5 w-5" />
+      <div className="flex items-center gap-4 mb-12 px-2 shrink-0 group cursor-pointer">
+        <div className="relative">
+          <div className="absolute -inset-1 bg-primary-500 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all" />
+          <div className="relative w-12 h-12 bg-neutral-900 dark:bg-primary-500 rounded-2xl flex items-center justify-center shadow-2xl transition-transform">
+            <GraduationCap className="text-white w-7 h-7" />
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-[0.3em] text-white/40 leading-none">Student Portal</p>
-          <p className="text-sm font-black tracking-tight text-white truncate">InspireRise</p>
+        <div>
+          <span className="block font-black text-2xl tracking-tighter text-neutral-900 dark:text-white leading-none">PRISM</span>
+          <span className="block text-[10px] font-black tracking-[0.3em] text-primary-500 uppercase mt-1">Student</span>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col gap-0.5 overflow-y-auto custom-scrollbar">
-        {NAV_ITEMS.map(item => {
-          const Icon    = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <motion.button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              whileHover={{ x: 2 }}
-              whileTap={{ scale: 0.97 }}
-              className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-all duration-200 ${
-                isActive
-                  ? 'bg-blue-500/20 text-blue-300 shadow-[inset_0_0_0_1px_rgba(96,165,250,0.25)]'
-                  : 'text-white/60 hover:bg-white/8 hover:text-white'
-              }`}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="student-sidebar-pill"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-blue-400"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-              <Icon className={`h-4 w-4 shrink-0 transition-colors ${isActive ? 'text-blue-400' : 'text-white/40 group-hover:text-white/70'}`} />
-              <span className="truncate">{item.label}</span>
-            </motion.button>
-          );
-        })}
+      <nav className="flex-1 space-y-2 overflow-y-auto overflow-x-visible scrollbar-hide">
+        {NAV_ITEMS.map(item => navBtn(item.id, item.label, item.icon))}
+        {navBtn('notifications', 'Notifications', Bell, unreadCount)}
+        {navBtn('settings', 'Settings', Settings)}
       </nav>
 
-      {/* Bottom — notifications + settings + logout */}
-      <div className="flex flex-col gap-0.5 pt-3 border-t border-white/10">
-        {/* Notifications */}
-        <motion.button
-          onClick={() => onNavigate('notifications')}
-          whileHover={{ x: 2 }}
-          whileTap={{ scale: 0.97 }}
-          className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-all duration-200 ${
-            activeTab === 'notifications'
-              ? 'bg-blue-500/20 text-blue-300 shadow-[inset_0_0_0_1px_rgba(96,165,250,0.25)]'
-              : 'text-white/60 hover:bg-white/8 hover:text-white'
-          }`}
-        >
-          {activeTab === 'notifications' && (
-            <motion.div
-              layoutId="student-sidebar-pill"
-              className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-blue-400"
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            />
-          )}
-          <Bell className={`h-4 w-4 shrink-0 transition-colors ${activeTab === 'notifications' ? 'text-blue-400' : 'text-white/40 group-hover:text-white/70'}`} />
-          <span className="flex-1 truncate">Notifications</span>
-          {unreadCount > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1.5 text-[10px] font-black text-white">
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
-          )}
-        </motion.button>
-
-        {/* Settings */}
-        <motion.button
-          onClick={() => onNavigate('settings')}
-          whileHover={{ x: 2 }}
-          whileTap={{ scale: 0.97 }}
-          className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-all duration-200 ${
-            activeTab === 'settings'
-              ? 'bg-blue-500/20 text-blue-300 shadow-[inset_0_0_0_1px_rgba(96,165,250,0.25)]'
-              : 'text-white/60 hover:bg-white/8 hover:text-white'
-          }`}
-        >
-          {activeTab === 'settings' && (
-            <motion.div
-              layoutId="student-sidebar-pill"
-              className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-blue-400"
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            />
-          )}
-          <Settings className={`h-4 w-4 shrink-0 transition-colors ${activeTab === 'settings' ? 'text-blue-400' : 'text-white/40 group-hover:text-white/70'}`} />
-          <span className="truncate">Settings</span>
-        </motion.button>
-
-        {/* Logout */}
-        <motion.button
+      {/* Sign out */}
+      <div className="mt-auto pt-8 border-t border-neutral-100 dark:border-white/5 shrink-0">
+        <button
           onClick={onLogout}
-          whileHover={{ x: 2 }}
-          whileTap={{ scale: 0.97 }}
-          className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-white/40 transition-all hover:bg-red-500/10 hover:text-red-400"
+          className="w-full flex items-center gap-4 px-5 py-4 rounded-[1.25rem] text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-500/10 transition-all duration-500 group"
         >
-          <LogOut className="h-4 w-4 shrink-0 transition-colors group-hover:text-red-400" />
-          <span className="truncate">Sign Out</span>
-        </motion.button>
+          <div className="w-10 h-10 rounded-xl bg-error-50 dark:bg-error-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <LogOut className="w-5 h-5" />
+          </div>
+          <span className="font-black text-xs md:text-sm tracking-tight uppercase tracking-widest">Sign Out</span>
+        </button>
       </div>
     </aside>
   );

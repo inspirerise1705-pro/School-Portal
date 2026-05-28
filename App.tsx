@@ -23,6 +23,7 @@ import QuizReportsView from './QuizReportsView';
 import SettingsView from './SettingsView';
 import TimelineView from './TimelineView';
 import NotificationsPage from './NotificationsPage';
+import TeacherDoubtView from './TeacherDoubtView';
 import StudentApp from './StudentApp';
 
 export default function App() {
@@ -30,7 +31,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [userRole, setUserRole] = useState<'teacher' | 'student' | null>(null);
   const [roleLoading, setRoleLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('teacher_tab') || 'dashboard');
   const [showStartupLoader, setShowStartupLoader] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -109,6 +110,7 @@ export default function App() {
 
   const handleNavigate = (tab: string) => {
     setActiveTab(tab);
+    localStorage.setItem('teacher_tab', tab);
     setShowSidebar(false);
   };
 
@@ -162,6 +164,8 @@ export default function App() {
             setWallpaper={setCurrentWallpaper}
           />
         );
+      case 'doubts':
+        return <TeacherDoubtView />;
       case 'notifications':
         return <NotificationsPage onBack={() => handleNavigate('dashboard')} />;
       default:

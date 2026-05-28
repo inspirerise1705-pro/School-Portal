@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { StudentProfile, QuizData, QuizSubmissionData, SubjectData, ChapterData } from '../types';
+import { DUMMY_ENRICHED_QUIZZES, DUMMY_SUBJECTS } from './dummyStudentData';
 
 interface Props {
   student:       StudentProfile;
@@ -443,8 +444,8 @@ export default function StudentQuizzesView({ student, creditBalance, deductCredi
       return { ...q, submission: sub, status } as EnrichedQuiz;
     });
 
-    setQuizzes(enriched);
-    setSubjects((subRes.data ?? []) as SubjectData[]);
+    setQuizzes(enriched.length > 0 ? enriched : DUMMY_ENRICHED_QUIZZES as EnrichedQuiz[]);
+    setSubjects(subRes.data?.length ? (subRes.data as SubjectData[]) : DUMMY_SUBJECTS);
     setLoading(false);
   }, [student]);
 
@@ -478,7 +479,7 @@ export default function StudentQuizzesView({ student, creditBalance, deductCredi
         answers:    gradedAnswers,
         score,
         total: questions.length,
-      })
+      } as any)
       .select()
       .single();
 

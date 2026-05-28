@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GraduationCap, School, ArrowRight, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { School, ArrowRight, Lock, Mail, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 interface LoginProps {
@@ -12,6 +12,7 @@ interface LoginProps {
 export default function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [error, setError] = useState('');
   const [view, setView] = useState<'login' | 'forgot'>('login');
@@ -129,12 +130,12 @@ export default function Login({ onLogin }: LoginProps) {
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-white/60 tracking-[0.35em] ml-1">Email address</label>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 z-10 pointer-events-none" />
                         <input
                           type="email"
                           required
                           placeholder="teacher@school.edu"
-                          className="w-full rounded-3xl border border-white/10 bg-slate-950/70 px-12 py-4 text-sm font-semibold text-white placeholder:text-white/30 focus:border-primary-400 focus:outline-none focus:ring-4 focus:ring-primary-400/10 transition"
+                          className="w-full rounded-3xl border border-white/10 bg-slate-950/70 pl-12 pr-5 py-4 text-sm font-semibold text-white placeholder:text-white/30 focus:border-primary-400 focus:outline-none focus:ring-4 focus:ring-primary-400/10 transition"
                           value={email}
                           onChange={(e) => { setEmail(e.target.value); setError(''); }}
                         />
@@ -153,15 +154,23 @@ export default function Login({ onLogin }: LoginProps) {
                         </button>
                       </div>
                       <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 z-10 pointer-events-none" />
                         <input
-                          type="password"
+                          type={showPassword ? 'text' : 'password'}
                           required
                           placeholder="••••••••"
-                          className="w-full rounded-3xl border border-white/10 bg-slate-950/70 px-12 py-4 text-sm font-semibold text-white placeholder:text-white/30 focus:border-primary-400 focus:outline-none focus:ring-4 focus:ring-primary-400/10 transition"
+                          className="w-full rounded-3xl border border-white/10 bg-slate-950/70 pl-12 pr-12 py-4 text-sm font-semibold text-white placeholder:text-white/30 focus:border-primary-400 focus:outline-none focus:ring-4 focus:ring-primary-400/10 transition"
                           value={password}
                           onChange={(e) => { setPassword(e.target.value); setError(''); }}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(v => !v)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white/40 hover:text-white/70 transition"
+                          tabIndex={-1}
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
                       </div>
                     </div>
 
