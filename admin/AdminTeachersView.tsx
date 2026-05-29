@@ -218,43 +218,43 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
                     exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
                     className="border-t border-slate-700/40 px-4 py-3 bg-slate-800/30"
                   >
-                    <div className=”grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs”>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                       <div>
-                        <p className=”text-slate-300 font-bold uppercase tracking-wider mb-1.5”>Class Assignments</p>
+                        <p className="text-slate-300 font-bold uppercase tracking-wider mb-1.5">Class Assignments</p>
                         {teacher.classes.length === 0
-                          ? <p className=”text-slate-400”>No classes assigned</p>
+                          ? <p className="text-slate-400">No classes assigned</p>
                           : teacher.classes.map((c, i) => (
-                              <div key={i} className=”flex items-center gap-1.5 mb-1”>
-                                <BookOpen className=”h-3 w-3 text-slate-400” />
-                                <span className=”text-slate-300”>{c.name} {c.section} · {c.subject}</span>
+                              <div key={i} className="flex items-center gap-1.5 mb-1">
+                                <BookOpen className="h-3 w-3 text-slate-400" />
+                                <span className="text-slate-300">{c.name} {c.section} · {c.subject}</span>
                               </div>
                             ))
                         }
                       </div>
                       <div>
-                        <p className=”text-slate-300 font-bold uppercase tracking-wider mb-1.5”>Details</p>
-                        <p className=”text-slate-400”>Class Teacher of: <span className=”text-white”>{teacher.class_teacher_of || '—'}</span></p>
-                        <p className=”text-slate-400 mt-1”>Joined: <span className=”text-white”>{fmtDate(teacher.created_at)}</span></p>
+                        <p className="text-slate-300 font-bold uppercase tracking-wider mb-1.5">Details</p>
+                        <p className="text-slate-400">Class Teacher of: <span className="text-white">{teacher.class_teacher_of || '—'}</span></p>
+                        <p className="text-slate-400 mt-1">Joined: <span className="text-white">{fmtDate(teacher.created_at)}</span></p>
                       </div>
                     </div>
 
                     {/* Per-teacher feature permissions */}
-                    <div className=”mt-4 pt-3 border-t border-slate-700/40”>
-                      <div className=”flex items-center gap-1.5 mb-2.5”>
-                        <Shield className=”h-3.5 w-3.5 text-primary-400” />
-                        <p className=”text-xs font-black text-slate-300 uppercase tracking-wider”>Feature Permissions</p>
-                        <span className=”text-[10px] text-slate-500 font-semibold ml-1”>(overrides school defaults)</span>
+                    <div className="mt-4 pt-3 border-t border-slate-700/40">
+                      <div className="flex items-center gap-1.5 mb-2.5">
+                        <Shield className="h-3.5 w-3.5 text-primary-400" />
+                        <p className="text-xs font-black text-slate-300 uppercase tracking-wider">Feature Permissions</p>
+                        <span className="text-[10px] text-slate-500 font-semibold ml-1">(overrides school defaults)</span>
                       </div>
-                      <div className=”grid grid-cols-1 sm:grid-cols-3 gap-2”>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         {TEACHER_PERMS.map(({ key, label }) => {
                           const perms = getPerms(teacher);
                           const on = perms[key] ?? true;
                           const isSaving = permSaving === teacher.id + key;
                           return (
-                            <div key={key} className=”flex items-center justify-between gap-2 rounded-lg bg-slate-800/70 px-3 py-2”>
-                              <span className=”text-[11px] text-slate-300 font-semibold”>{label}</span>
+                            <div key={key} className="flex items-center justify-between gap-2 rounded-lg bg-slate-800/70 px-3 py-2">
+                              <span className="text-[11px] text-slate-300 font-semibold">{label}</span>
                               {isSaving
-                                ? <Loader2 className=”h-3.5 w-3.5 animate-spin text-slate-500 shrink-0” />
+                                ? <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500 shrink-0" />
                                 : <Toggle on={on} onToggle={() => togglePerm(teacher, key)} />
                               }
                             </div>
@@ -265,7 +265,7 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
 
                     <button
                       onClick={() => handleDeactivate(teacher.id)}
-                      className=”mt-3 text-xs text-red-400 hover:text-red-300 transition font-semibold”
+                      className="mt-3 text-xs text-red-400 hover:text-red-300 transition font-semibold"
                     >
                       Remove teacher from school
                     </button>
@@ -382,7 +382,7 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
                     <span className="h-6 w-6 rounded-full bg-primary-600 text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">1</span>
                     <div>
                       <p className="font-bold">Create auth account in Supabase</p>
-                      <p className="text-slate-400 text-xs mt-0.5">Go to Supabase â†’ Authentication â†’ Users â†’ Invite User. Enter their email.</p>
+                      <p className="text-slate-400 text-xs mt-0.5">Go to Supabase â†' Authentication â†' Users â†' Invite User. Enter their email.</p>
                     </div>
                   </div>
                   <div className="flex gap-3">

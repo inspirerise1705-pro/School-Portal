@@ -145,7 +145,7 @@ export default function AdminFeesView({ schoolId }: AdminCtx) {
       ) : (
         <div className="bg-slate-900/85 border border-slate-700/60 rounded-2xl text-white overflow-hidden backdrop-blur-sm">
           <div className="hidden sm:grid grid-cols-[1fr_100px_100px_180px] gap-3 px-5 py-2.5 border-b border-slate-700/40 text-[10px] text-slate-500 font-black uppercase tracking-wider">
-            <span>Student</span><span>Class</span><span>Roll No.</span><span>Status "” Update</span>
+            <span>Student</span><span>Class</span><span>Roll No.</span><span>Status "" Update</span>
           </div>
           <div className="divide-y divide-slate-700/30">
             {filtered.map(s => {
@@ -159,7 +159,7 @@ export default function AdminFeesView({ schoolId }: AdminCtx) {
                     <p className="text-sm font-semibold truncate">{s.name}</p>
                   </div>
                   <span className="text-xs text-slate-400 hidden sm:block">{s.class_name}</span>
-                  <span className="text-xs text-slate-400 hidden sm:block">{s.roll_number ?? '"”'}</span>
+                  <span className="text-xs text-slate-400 hidden sm:block">{s.roll_number ?? '""'}</span>
                   <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
                     {updating === s.id
                       ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
