@@ -34,8 +34,9 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { Teacher, ClassInfo, QuizQuestion, QuestionPaper, StudentQuizSubmission } from './types';
-import { generateQuiz } from './geminiService';
+import { generateQuiz, generateQuestionPaper } from './geminiService';
 import { mockQuizSubmissions, mockStudents } from './mockData';
+import { supabase } from './lib/supabase';
 
 interface AcademicHubViewProps {
   teacher: Teacher;
@@ -91,33 +92,95 @@ export default function AcademicHubView({ teacher, classes }: AcademicHubViewPro
     try {
       const result = await generateQuiz(quizTopic, questionCount);
       setAiQuiz(result);
+    } catch (err: any) {
+      triggerSuccess('AI Error', err?.message ?? 'Could not generate quiz. Check your Gemini API key.');
     } finally {
       setIsGenerating(false);
     }
   }
 
-  const handleGeneratePaper = () => {
+  const handleGeneratePaper = async () => {
     if (!quizTopic || !selectedMarkers) return;
     setIsGenerating(true);
-    setTimeout(() => {
-      setQuestionPaper([
-        { question: "Analyze the strategic impact of the Deccan Plateau on ancient Indian trade routes.", type: 'MCQ', marks: 8, options: ["Navigational Superiority", "Mineral Wealth Resonance", "Safe Transit Corridors", "Comprehensive Influence"], correctAnswer: "Comprehensive Influence", explanation: "Sessional NCERT Matrix." },
-        { question: "Detail the administrative flux between the Cholas and Rashtrakuta dynasties.", type: 'MCQ', marks: 6, options: ["Centralized Ledger", "Decentralized Matrix", "Feudal Hierarchy", "Kinship Networks"], correctAnswer: "Decentralized Matrix", explanation: "Comparative Politics artifact." },
-        { question: "What role did the monsoon cycle play in sessional agrarian settlements?", type: 'Short Answer', marks: 4, answer: "Cycle Calibration", explanation: "Geographical History module." }
-      ]);
-      setPaperTitle(`${quizTopic} Ledger - Sessional #2026`);
-      setIsGenerating(false);
+    try {
+      const result = await generateQuestionPaper(quizTopic, selectedMarkers);
+      setQuestionPaper(result);
+      setPaperTitle(`${quizTopic} — Question Paper`);
       setEditingPaper(true);
-    }, 2500);
+    } catch (err: any) {
+      triggerSuccess('AI Error', err?.message ?? 'Could not generate paper. Check your Gemini API key.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const handleDistribute = (type: string) => {
-    triggerSuccess(`${type} Authorized`, `The sessional matrix was successfully streamed to Class ${classes.find(c=>c.id===selectedClassId)?.name}.`);
-    setAiQuiz(null);
-    setEditingPaper(false);
-    setQuestionPaper([]);
-    setQuizTopic('');
-    setSelectedMarkers(null);
+  const handleDistribute = async (type: string) => {
+    if (type === 'Assignment') {
+      triggerSuccess('Assignment Published', `Shared with Class ${classes.find(c => c.id === selectedClassId)?.name}.`);
+      return;
+    }
+
+    const questions = type === 'Exam' ? questionPaper : (aiQuiz ?? []);
+    if (!questions.length) {
+      triggerSuccess('Nothing to publish', 'Generate questions first, then publish.');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Use 'as any' casts because database.types.ts is partial — quizzes/subjects not typed
+      const { data: teacherRow } = await (supabase as any)
+        .from('teachers')
+        .select('school_id')
+        .eq('id', user.id)
+        .maybeSingle() as { data: { school_id: string } | null };
+
+      if (!teacherRow) throw new Error('Teacher profile not found in database');
+      const schoolId: string = teacherRow.school_id;
+
+      // Resolve class_id by name; fall back to demo Class 8 seed ID
+      const selectedClass = classes.find(c => c.id === selectedClassId);
+      const { data: realClass } = selectedClass
+        ? await (supabase as any).from('classes').select('id').eq('school_id', schoolId).eq('name', selectedClass.name).maybeSingle() as { data: { id: string } | null }
+        : { data: null as { id: string } | null };
+
+      // Resolve subject_id by name
+      const selectedSubjectObj = teacher.subjects.find(s => s.id === selectedSubjectId);
+      const { data: realSubject } = selectedSubjectObj
+        ? await (supabase as any).from('subjects').select('id').eq('school_id', schoolId).eq('name', selectedSubjectObj.name).maybeSingle() as { data: { id: string } | null }
+        : { data: null as { id: string } | null };
+
+      const title = type === 'Exam' ? paperTitle : quizTopic;
+      const classId = realClass?.id ?? '00000000-0000-0000-0000-000000000010';
+
+      const { error: insertErr } = await (supabase as any).from('quizzes').insert({
+        school_id: schoolId,
+        class_id: classId,
+        teacher_id: user.id,
+        subject_id: realSubject?.id ?? null,
+        title,
+        questions,
+        published: true,
+        time_limit_minutes: 30,
+      }) as { error: any };
+
+      if (insertErr) throw insertErr;
+
+      const classLabel = selectedClass ? `${selectedClass.name}-${selectedClass.section}` : 'Class';
+      triggerSuccess(`${type} Published`, `Quiz is now live for ${classLabel}. Students can attempt it.`);
+      setAiQuiz(null);
+      setEditingPaper(false);
+      setQuestionPaper([]);
+      setQuizTopic('');
+      setSelectedMarkers(null);
+    } catch (err: any) {
+      triggerSuccess('Publish Failed', err?.message ?? 'Could not publish. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleAddQuestion = () => {
