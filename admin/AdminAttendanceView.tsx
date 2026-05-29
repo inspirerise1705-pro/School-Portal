@@ -117,7 +117,7 @@ export default function AdminAttendanceView({ schoolId }: AdminCtx) {
         <p className="text-sm opacity-75 mt-1">School-wide attendance tracking and analysis</p>
       </div>
 
-      {/* â”€â”€ Daily view â”€â”€ */}
+      {/* â"€â"€ Daily view â"€â"€ */}
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h2 className="text-sm font-black uppercase tracking-wider text-slate-300">Daily Attendance</h2>
@@ -181,7 +181,7 @@ export default function AdminAttendanceView({ schoolId }: AdminCtx) {
         )}
       </div>
 
-      {/* â”€â”€ Monthly view â”€â”€ */}
+      {/* â"€â"€ Monthly view â"€â"€ */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-black uppercase tracking-wider text-slate-300">Monthly Overview</h2>

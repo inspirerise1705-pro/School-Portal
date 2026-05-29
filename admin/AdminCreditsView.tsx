@@ -66,7 +66,7 @@ export default function AdminCreditsView({ schoolId, adminId }: AdminCtx) {
       const bal = balMap.get(s.user_id) as any;
       return {
         student_id: s.id, name: s.name,
-        class_name: s.classes ? `${s.classes.name} ${s.classes.section}` : '"”',
+        class_name: s.classes ? `${s.classes.name} ${s.classes.section}` : '""',
         user_id: s.user_id,
         balance:   bal?.balance           ?? 0,
         allocated: bal?.total_allocated   ?? 0,
@@ -298,7 +298,7 @@ export default function AdminCreditsView({ schoolId, adminId }: AdminCtx) {
                     <label className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Target Class</label>
                     <select value={bulkClass} onChange={e => setBulkClass(e.target.value)}
                       className="mt-1 w-full rounded-xl bg-slate-800/95 border border-slate-600/80 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary-500/50 transition">
-                      <option value="">"” Select class "”</option>
+                      <option value="">"" Select class ""</option>
                       {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
                     </select>
                   </div>

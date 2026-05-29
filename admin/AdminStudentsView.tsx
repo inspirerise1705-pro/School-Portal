@@ -184,7 +184,7 @@ export default function AdminStudentsView({ schoolId }: AdminCtx) {
               value={state.class_id ?? ''} onChange={e => setState((s: any) => ({ ...s, class_id: e.target.value }))}
               className="mt-1 w-full rounded-xl bg-slate-800/95 border border-slate-600/80 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary-500/50 transition"
             >
-              <option value=””>Unassigned</option>
+              <option value="">Unassigned</option>
               {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
             </select>
           </div>
@@ -293,11 +293,11 @@ export default function AdminStudentsView({ schoolId }: AdminCtx) {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold truncate">{s.name}</p>
-                    <p className=”text-[11px] text-slate-500 truncate”>{s.email ?? '—'}</p>
+                    <p className="text-[11px] text-slate-500 truncate">{s.email ?? '—'}</p>
                   </div>
                 </div>
-                <span className=”text-xs text-slate-300 hidden sm:block”>{s.class_name}</span>
-                <span className=”text-xs text-slate-400 hidden sm:block”>{s.roll_number ?? '—'}</span>
+                <span className="text-xs text-slate-300 hidden sm:block">{s.class_name}</span>
+                <span className="text-xs text-slate-400 hidden sm:block">{s.roll_number ?? '—'}</span>
                 <div className="hidden sm:flex"><FeesTag status={s.fees_status} /></div>
                 <div className="flex items-center gap-1 ml-auto sm:ml-0">
                   {!s.user_id && (

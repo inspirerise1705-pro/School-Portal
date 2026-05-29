@@ -143,15 +143,15 @@ export default function AdminDashboardView({ schoolId }: AdminCtx) {
         </div>
       ) : stats && (
         <>
-          {/* â”€â”€ Key stats â”€â”€ */}
+          {/* â"€â"€ Key stats â"€â"€ */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <StatCard icon={Users}         label="Teachers"  value={stats.teachers}  sub="Active staff"        color="text-blue-400"   bg="bg-blue-500/15"   />
             <StatCard icon={GraduationCap} label="Students"  value={stats.students}  sub="Enrolled"            color="text-primary-400" bg="bg-primary-500/15" />
             <StatCard icon={BookOpen}      label="Classes"   value={stats.classes}   sub="Active sections"     color="text-emerald-400" bg="bg-emerald-500/15" />
-            <StatCard icon={BarChart3}     label="Today Att."value={attPct !== null ? `${attPct}%` : '"”'}  sub={`${stats.todayPresent}/${stats.todayTotal} marked`} color="text-amber-400" bg="bg-amber-500/15" />
+            <StatCard icon={BarChart3}     label="Today Att."value={attPct !== null ? `${attPct}%` : '""'}  sub={`${stats.todayPresent}/${stats.todayTotal} marked`} color="text-amber-400" bg="bg-amber-500/15" />
           </div>
 
-          {/* â”€â”€ Fees + Credits â”€â”€ */}
+          {/* â"€â"€ Fees + Credits â"€â"€ */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
 
             {/* Fees breakdown */}
@@ -246,7 +246,7 @@ export default function AdminDashboardView({ schoolId }: AdminCtx) {
             </div>
           </div>
 
-          {/* â”€â”€ Class summary table â”€â”€ */}
+          {/* â"€â"€ Class summary table â"€â"€ */}
           {classes.length > 0 && (
             <div className="bg-slate-900/85 border border-slate-700/60 rounded-2xl text-white overflow-hidden backdrop-blur-sm">
               <div className="px-5 py-4 border-b border-slate-700/40 flex items-center gap-2">
@@ -260,7 +260,7 @@ export default function AdminDashboardView({ schoolId }: AdminCtx) {
                       <BookOpen className="h-4 w-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold">{cls.name} "“ {cls.section}</p>
+                      <p className="text-sm font-bold">{cls.name} "" {cls.section}</p>
                       <p className="text-xs text-slate-500">{cls.studentCount} students</p>
                     </div>
                     <div className="text-right shrink-0">
