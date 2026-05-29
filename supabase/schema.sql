@@ -57,6 +57,10 @@ CREATE TABLE IF NOT EXISTS public.students (
 -- Add user_id to students so they can log in via Supabase Auth
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
 
+-- Per-student and per-teacher feature permission overrides (override school-wide defaults)
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '{}';
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '{}';
+
 -- ============================================================
 -- SECTION 2: ACADEMIC CONTENT TABLES
 -- ============================================================
@@ -92,6 +96,9 @@ CREATE TABLE IF NOT EXISTS public.quizzes (
   published           BOOLEAN NOT NULL DEFAULT false,
   created_at          TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE public.quizzes ADD COLUMN IF NOT EXISTS quiz_type TEXT NOT NULL DEFAULT 'quiz'
+  CHECK (quiz_type IN ('quiz', 'unit_test', 'main_test', 'assignment'));
 
 -- Student answers for teacher-assigned quizzes
 CREATE TABLE IF NOT EXISTS public.quiz_submissions (
@@ -373,6 +380,7 @@ END;
 $$;
 
 -- Add credits to a user (demo purchase / admin allocation)
+-- Uses UPSERT so it works even when no balance row exists yet.
 CREATE OR REPLACE FUNCTION public.add_credits(
   p_user_id     UUID,
   p_amount      INTEGER,
@@ -384,16 +392,20 @@ DECLARE
   v_new_balance INTEGER;
   v_school_id   UUID;
 BEGIN
-  SELECT school_id INTO v_school_id FROM public.user_credit_balances WHERE user_id = p_user_id;
+  -- Resolve school_id from teachers or students
+  SELECT COALESCE(
+    (SELECT school_id FROM public.teachers WHERE id = p_user_id LIMIT 1),
+    (SELECT school_id FROM public.students WHERE user_id = p_user_id LIMIT 1)
+  ) INTO v_school_id;
 
-  UPDATE public.user_credit_balances
-  SET balance          = balance + p_amount,
-      total_allocated  = total_allocated + p_amount,
-      updated_at       = now()
-  WHERE user_id = p_user_id
+  -- UPSERT: create the row if it doesn't exist, then add credits
+  INSERT INTO public.user_credit_balances (user_id, school_id, balance, total_allocated, total_used)
+  VALUES (p_user_id, v_school_id, p_amount, p_amount, 0)
+  ON CONFLICT (user_id) DO UPDATE
+    SET balance         = user_credit_balances.balance + p_amount,
+        total_allocated = user_credit_balances.total_allocated + p_amount,
+        updated_at      = now()
   RETURNING balance INTO v_new_balance;
-
-  IF NOT FOUND THEN RETURN -1; END IF;
 
   INSERT INTO public.credit_transactions
     (user_id, school_id, action_type, credits_delta, balance_after, description)
@@ -403,6 +415,33 @@ BEGIN
   RETURN v_new_balance;
 END;
 $$;
+
+-- Ensures a balance row exists for the calling user; returns current balance.
+-- Call this on app load so purchases and deductions never fail due to missing row.
+CREATE OR REPLACE FUNCTION public.ensure_credit_balance()
+RETURNS INTEGER LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_school_id UUID;
+  v_balance   INTEGER;
+BEGIN
+  SELECT COALESCE(
+    (SELECT school_id FROM public.teachers WHERE id = auth.uid() LIMIT 1),
+    (SELECT school_id FROM public.students WHERE user_id = auth.uid() LIMIT 1)
+  ) INTO v_school_id;
+
+  INSERT INTO public.user_credit_balances (user_id, school_id, balance, total_allocated, total_used)
+  VALUES (auth.uid(), v_school_id, 0, 0, 0)
+  ON CONFLICT (user_id) DO NOTHING;
+
+  SELECT balance INTO v_balance FROM public.user_credit_balances WHERE user_id = auth.uid();
+  RETURN COALESCE(v_balance, 0);
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.ensure_credit_balance FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.ensure_credit_balance TO authenticated;
 
 REVOKE EXECUTE ON FUNCTION public.deduct_credits FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.add_credits    FROM PUBLIC, anon;
@@ -671,6 +710,207 @@ INSERT INTO public.credit_packages (name, credits, price_inr) VALUES
   ('Pro',             500,   299.00),
   ('Unlimited Month', 9999,  499.00)
 ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- SECTION 10: ADMIN / PRINCIPAL TABLES
+-- ============================================================
+
+-- Per-school configuration managed by the principal
+CREATE TABLE IF NOT EXISTS public.school_settings (
+  school_id      UUID PRIMARY KEY REFERENCES public.schools(id) ON DELETE CASCADE,
+  academic_year  TEXT NOT NULL DEFAULT '2025-26',
+  working_days   TEXT[] DEFAULT ARRAY['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+  features       JSONB NOT NULL DEFAULT '{
+    "teacher_ai_quiz": true,
+    "teacher_ai_paper": true,
+    "student_ai_tutor": true,
+    "student_self_practice": true,
+    "doubt_box": true,
+    "study_materials": true,
+    "student_credits_default": 100
+  }',
+  updated_at     TIMESTAMPTZ DEFAULT now()
+);
+
+-- Fee payment event log (admin records each payment)
+CREATE TABLE IF NOT EXISTS public.fees_payments (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id    UUID NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
+  student_id   UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+  amount       DECIMAL(10,2) NOT NULL DEFAULT 0,
+  term         TEXT NOT NULL DEFAULT 'Annual',
+  payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  note         TEXT,
+  recorded_by  UUID REFERENCES public.teachers(id),
+  created_at   TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.fees_payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.school_settings ENABLE ROW LEVEL SECURITY;
+
+-- ── Helper: is the calling user the admin of a given school? ──
+CREATE OR REPLACE FUNCTION public.is_school_admin()
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.teachers
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$;
+REVOKE EXECUTE ON FUNCTION public.is_school_admin() FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.is_school_admin() TO authenticated;
+
+-- ── Update my_role() to return 'admin' for principal accounts ──
+CREATE OR REPLACE FUNCTION public.my_role()
+RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public AS $$
+  SELECT CASE
+    WHEN EXISTS (SELECT 1 FROM public.teachers WHERE id = auth.uid() AND role = 'admin') THEN 'admin'
+    WHEN EXISTS (SELECT 1 FROM public.teachers WHERE id = auth.uid())                    THEN 'teacher'
+    WHEN EXISTS (SELECT 1 FROM public.students WHERE user_id = auth.uid())               THEN 'student'
+    ELSE NULL
+  END;
+$$;
+
+-- ── Admin RLS: principal has full read/write on their school ──
+
+-- SCHOOLS
+CREATE POLICY "schools: admin read own"   ON public.schools
+  FOR SELECT USING (id = public.my_school_id() AND public.is_school_admin());
+
+-- TEACHERS (admin can read/update all teachers in school)
+CREATE POLICY "teachers: admin all"       ON public.teachers
+  FOR ALL USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- CLASSES
+CREATE POLICY "classes: admin all"        ON public.classes
+  FOR ALL USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- TEACHER_CLASSES
+CREATE POLICY "teacher_classes: admin all" ON public.teacher_classes
+  FOR ALL USING (
+    teacher_id IN (SELECT id FROM public.teachers WHERE school_id = public.my_school_id())
+    AND public.is_school_admin()
+  );
+
+-- STUDENTS (admin full CRUD)
+CREATE POLICY "students: admin all"       ON public.students
+  FOR ALL USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- SUBJECTS
+CREATE POLICY "subjects: admin all"       ON public.subjects
+  FOR ALL USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- CHAPTERS
+CREATE POLICY "chapters: admin all"       ON public.chapters
+  FOR ALL USING (
+    subject_id IN (SELECT id FROM public.subjects WHERE school_id = public.my_school_id())
+    AND public.is_school_admin()
+  );
+
+-- QUIZZES (read-only for admin — teachers own their quizzes)
+CREATE POLICY "quizzes: admin read"       ON public.quizzes
+  FOR SELECT USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- QUIZ_SUBMISSIONS (read-only for admin)
+CREATE POLICY "quiz_submissions: admin read" ON public.quiz_submissions
+  FOR SELECT USING (
+    quiz_id IN (SELECT id FROM public.quizzes WHERE school_id = public.my_school_id())
+    AND public.is_school_admin()
+  );
+
+-- TASKS (read-only for admin)
+CREATE POLICY "tasks: admin read"         ON public.tasks
+  FOR SELECT USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- STUDY_MATERIALS (read-only for admin)
+CREATE POLICY "study_materials: admin read" ON public.study_materials
+  FOR SELECT USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- ATTENDANCE (admin full read; teachers still write)
+CREATE POLICY "attendance: admin read"    ON public.attendance
+  FOR SELECT USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- NOTIFICATIONS (admin can insert school-wide)
+CREATE POLICY "notifications: admin insert" ON public.notifications
+  FOR INSERT WITH CHECK (school_id = public.my_school_id() AND public.is_school_admin());
+CREATE POLICY "notifications: admin read"   ON public.notifications
+  FOR SELECT USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- DOUBT_BOX (read-only for admin)
+CREATE POLICY "doubt_box: admin read"     ON public.doubt_box
+  FOR SELECT USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- TIMETABLE_SLOTS (admin full)
+CREATE POLICY "timetable_slots: admin all" ON public.timetable_slots
+  FOR ALL USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- CALENDAR_EVENTS (admin full — creates holidays/exams/announcements)
+CREATE POLICY "calendar_events: admin all" ON public.calendar_events
+  FOR ALL USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- CREDIT_PACKAGES (admin read)
+CREATE POLICY "credit_packages: admin read" ON public.credit_packages
+  FOR SELECT USING (public.is_school_admin());
+
+-- USER_CREDIT_BALANCES (admin read all in school; admin can update for allocation)
+CREATE POLICY "user_credit_balances: admin all" ON public.user_credit_balances
+  FOR ALL USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- CREDIT_TRANSACTIONS (admin read all in school)
+CREATE POLICY "credit_transactions: admin read" ON public.credit_transactions
+  FOR SELECT USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- CREDIT_REQUESTS (admin read + update in school)
+CREATE POLICY "credit_requests: admin all" ON public.credit_requests
+  FOR ALL USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- FEES_PAYMENTS (admin full)
+CREATE POLICY "fees_payments: admin all"  ON public.fees_payments
+  FOR ALL USING (school_id = public.my_school_id() AND public.is_school_admin());
+
+-- SCHOOL_SETTINGS (admin full)
+CREATE POLICY "school_settings: admin all" ON public.school_settings
+  FOR ALL USING (school_id = public.my_school_id() AND public.is_school_admin());
+CREATE POLICY "school_settings: teacher read" ON public.school_settings
+  FOR SELECT USING (school_id = public.my_school_id());
+
+-- ── Admin RPC: allocate credits to a student from admin ──────
+CREATE OR REPLACE FUNCTION public.admin_allocate_credits(
+  p_student_user_id UUID,
+  p_amount          INTEGER,
+  p_description     TEXT DEFAULT 'Admin allocation'
+) RETURNS INTEGER LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public AS $$
+DECLARE
+  v_school_id   UUID;
+  v_new_balance INTEGER;
+BEGIN
+  IF NOT public.is_school_admin() THEN RAISE EXCEPTION 'Forbidden'; END IF;
+  SELECT school_id INTO v_school_id FROM public.teachers WHERE id = auth.uid();
+
+  INSERT INTO public.user_credit_balances (user_id, school_id, balance, total_allocated, total_used)
+  VALUES (p_student_user_id, v_school_id, p_amount, p_amount, 0)
+  ON CONFLICT (user_id) DO UPDATE
+    SET balance         = user_credit_balances.balance + p_amount,
+        total_allocated = user_credit_balances.total_allocated + p_amount,
+        updated_at      = now()
+  RETURNING balance INTO v_new_balance;
+
+  INSERT INTO public.credit_transactions
+    (user_id, school_id, action_type, credits_delta, balance_after, description)
+  VALUES (p_student_user_id, v_school_id, 'admin_allocation', p_amount, v_new_balance, p_description);
+
+  RETURN v_new_balance;
+END; $$;
+REVOKE EXECUTE ON FUNCTION public.admin_allocate_credits FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.admin_allocate_credits TO authenticated;
+
+-- ── HOW TO ADD A PRINCIPAL (run AFTER creating user in Supabase Auth):
+-- INSERT INTO public.teachers (id, school_id, name, email, role)
+-- VALUES ('<auth-user-id>', '00000000-0000-0000-0000-000000000001',
+--         'Dr. Anita Sharma', 'principal@school.edu', 'admin');
+-- ============================================================
 
 -- ============================================================
 -- HOW TO ADD A TEACHER (run AFTER creating user in Supabase Auth):

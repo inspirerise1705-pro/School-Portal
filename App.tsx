@@ -25,14 +25,24 @@ import TimelineView from './TimelineView';
 import NotificationsPage from './NotificationsPage';
 import TeacherDoubtView from './TeacherDoubtView';
 import StudentApp from './StudentApp';
+import AdminApp    from './AdminApp';
 
 export default function App() {
-  const [session, setSession] = useState<Session | null>(null);
+  // Read cached session + role from localStorage so the app renders instantly on repeat loads
+  const [session, setSession] = useState<Session | null>(() => {
+    try { const s = localStorage.getItem('ir_session'); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
   const [authLoading, setAuthLoading] = useState(true);
-  const [userRole, setUserRole] = useState<'teacher' | 'student' | null>(null);
+  const [userRole, setUserRole] = useState<'teacher' | 'student' | 'admin' | null>(
+    () => localStorage.getItem('ir_role') as 'teacher' | 'student' | 'admin' | null
+  );
   const [roleLoading, setRoleLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('teacher_tab') || 'dashboard');
-  const [showStartupLoader, setShowStartupLoader] = useState(true);
+  const [showStartupLoader, setShowStartupLoader] = useState(() => {
+    // Skip the 3-second animation if we already loaded within the last 10 minutes
+    const last = localStorage.getItem('app_loaded_at');
+    return !last || Date.now() - parseInt(last) > 10 * 60 * 1000;
+  });
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
 
@@ -48,12 +58,15 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) localStorage.setItem('ir_session', JSON.stringify(session));
+      else { localStorage.removeItem('ir_session'); localStorage.removeItem('ir_role'); }
       setAuthLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (!session) setUserRole(null);
+      if (session) localStorage.setItem('ir_session', JSON.stringify(session));
+      else { localStorage.removeItem('ir_session'); localStorage.removeItem('ir_role'); setUserRole(null); }
     });
 
     return () => subscription.unsubscribe();
@@ -64,13 +77,19 @@ export default function App() {
     if (!session) { setUserRole(null); return; }
     setRoleLoading(true);
     (async () => {
-      // Check teacher table first (id = auth.uid for teachers)
+      // Check teachers table (admin or teacher — id = auth.uid)
       const { data: teacher } = await supabase
         .from('teachers')
-        .select('id')
+        .select('id, role')
         .eq('id', session.user.id)
         .maybeSingle();
-      if (teacher) { setUserRole('teacher'); setRoleLoading(false); return; }
+      if (teacher) {
+        const role = (teacher as any).role === 'admin' ? 'admin' : 'teacher';
+        setUserRole(role);
+        localStorage.setItem('ir_role', role);
+        setRoleLoading(false);
+        return;
+      }
 
       // Check students table (user_id = auth.uid for students)
       const { data: student } = await supabase
@@ -78,9 +97,21 @@ export default function App() {
         .select('id')
         .eq('user_id', session.user.id)
         .maybeSingle();
-      if (student) { setUserRole('student'); setRoleLoading(false); return; }
+      if (student) { setUserRole('student'); localStorage.setItem('ir_role', 'student'); setRoleLoading(false); return; }
 
-      // Neither role found — sign out gracefully
+      // Auto-link: student signed up with an email that matches a pre-created student record
+      const { data: pendingStudent } = await supabase
+        .from('students')
+        .select('id')
+        .eq('email', session.user.email ?? '')
+        .is('user_id', null)
+        .maybeSingle();
+      if (pendingStudent) {
+        await supabase.from('students').update({ user_id: session.user.id }).eq('id', (pendingStudent as any).id);
+        setUserRole('student'); localStorage.setItem('ir_role', 'student'); setRoleLoading(false); return;
+      }
+
+      // No role found — sign out gracefully
       await supabase.auth.signOut();
       setUserRole(null);
       setRoleLoading(false);
@@ -91,6 +122,8 @@ export default function App() {
     await supabase.auth.signOut();
     setSession(null);
     setUserRole(null);
+    localStorage.removeItem('ir_session');
+    localStorage.removeItem('ir_role');
   };
 
   // Persistence for theme
@@ -114,12 +147,31 @@ export default function App() {
     setShowSidebar(false);
   };
 
-  if (showStartupLoader || authLoading || roleLoading) {
-    return <LoadingScreen onComplete={() => setShowStartupLoader(false)} />;
+  if (showStartupLoader) {
+    return (
+      <LoadingScreen onComplete={() => {
+        localStorage.setItem('app_loaded_at', Date.now().toString());
+        setShowStartupLoader(false);
+      }} />
+    );
+  }
+
+  // Only block rendering if we have no cached session/role to work with yet
+  if ((authLoading || roleLoading) && !session && !userRole) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#030718]">
+        <div className="h-8 w-8 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+      </div>
+    );
   }
 
   if (!session || !userRole) {
     return <Login onLogin={() => {}} />;
+  }
+
+  // Admin/Principal — their own portal
+  if (userRole === 'admin') {
+    return <AdminApp session={session} onLogout={handleLogout} />;
   }
 
   // Students get their own completely separate app

@@ -124,6 +124,7 @@ export type QuizData = {
   time_limit_minutes: number;
   published: boolean;
   created_at: string;
+  quiz_type?: 'quiz' | 'unit_test' | 'main_test' | 'assignment';
   subjects?: SubjectData | null;
   chapters?: ChapterData | null;
 };
@@ -286,6 +287,7 @@ export type CreditRequest = {
 
 export const CREDIT_COSTS = {
   AI_TUTOR_MESSAGE:       1,
+  AI_TUTOR_IMAGE_MSG:     3,   // image upload = more processing
   SELF_PRACTICE_5Q:       3,
   SELF_PRACTICE_10Q:      5,
   SELF_PRACTICE_15Q:      7,
