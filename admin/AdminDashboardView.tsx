@@ -172,17 +172,17 @@ export default function AdminDashboardView({ schoolId }: AdminCtx) {
                   </div>
                 ))}
               </div>
-              <ResponsiveContainer width="100%" height={80}>
-                <BarChart data={feesChartData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }} barSize={40}>
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }} axisLine={false} tickLine={false} />
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={feesChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barSize={56}>
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.5)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{ background: 'rgba(10,15,30,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 11 }}
                     itemStyle={{ color: '#fff', fontWeight: 700 }} cursor={false}
                     formatter={(v: number) => [v, 'Students']}
                   />
-                  <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                    {feesChartData.map((d, i) => <Cell key={i} fill={d.color} fillOpacity={0.8} />)}
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                    {feesChartData.map((d, i) => <Cell key={i} fill={d.color} fillOpacity={0.85} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
