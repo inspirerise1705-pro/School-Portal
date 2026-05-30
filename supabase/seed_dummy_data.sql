@@ -368,6 +368,23 @@ INSERT INTO public.students (school_id, class_id, name, email, roll_number, fees
   (v_school_id, id_9B, 'Varun Mathur',   'varun.m@student.ir',   '9B-30', 'paid')
 ON CONFLICT DO NOTHING;
 
+
+-- ─────────────────────────────────────────────
+-- 4b. CALENDAR EVENTS (school-wide dummy events)
+-- ─────────────────────────────────────────────
+INSERT INTO public.calendar_events (school_id, teacher_id, title, date, type, description, is_global, class_id)
+VALUES
+  (v_school_id, NULL, 'Annual Day Rehearsal',         (CURRENT_DATE + INTERVAL ''3 days'')::TEXT,  'Activity',     'All students mandatory',            TRUE, NULL),
+  (v_school_id, NULL, 'PTM - Parent Teacher Meeting', (CURRENT_DATE + INTERVAL ''7 days'')::TEXT,  'Announcement', 'All classes 9 AM to 1 PM',          TRUE, NULL),
+  (v_school_id, NULL, 'Mid-Term Examinations Begin',  (CURRENT_DATE + INTERVAL ''14 days'')::TEXT, 'Lecture',      'Exams for all grades 6-9',          TRUE, NULL),
+  (v_school_id, NULL, 'Independence Day',             '2025-08-15',                                'Holiday',      'School closed',                     TRUE, NULL),
+  (v_school_id, NULL, 'Gandhi Jayanti',               '2025-10-02',                                'Holiday',      'School closed',                     TRUE, NULL),
+  (v_school_id, NULL, 'Diwali Break',                 '2025-10-20',                                'Holiday',      '3-day break Oct 20 to 22',          TRUE, NULL),
+  (v_school_id, NULL, 'Annual Sports Day',            (CURRENT_DATE + INTERVAL ''21 days'')::TEXT, 'Activity',     'Ground events from 8 AM',           TRUE, NULL),
+  (v_school_id, NULL, 'Science Exhibition',           (CURRENT_DATE + INTERVAL ''28 days'')::TEXT, 'Lecture',      'Class 8 and 9 projects on display', TRUE, NULL),
+  (v_school_id, NULL, 'Inter-House Debate',           (CURRENT_DATE + INTERVAL ''10 days'')::TEXT, 'Activity',     'English and Hindi rounds',          TRUE, NULL),
+  (v_school_id, NULL, 'Term 1 Results Declaration',  (CURRENT_DATE + INTERVAL ''35 days'')::TEXT, 'Announcement', 'Report cards distributed',          TRUE, NULL)
+ON CONFLICT DO NOTHING;
 RAISE NOTICE 'Students seeded: 240 students across 8 classes under school %', v_school_id;
 
 END $$;  -- end student seed

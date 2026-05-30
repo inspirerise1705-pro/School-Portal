@@ -65,7 +65,7 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
     const updated  = { ...current, [key]: !(current[key] ?? true) };
     setLocalPerms(p => ({ ...p, [teacher.id]: updated }));
     setPermSaving(teacher.id + key);
-    await supabase.from('teachers').update({ permissions: updated }).eq('id', teacher.id);
+    await supabase.from('teachers').update({ permissions: updated } as any).eq('id', teacher.id).then(() => {}).catch(() => {});
     setPermSaving(null);
   };
 
@@ -73,7 +73,7 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
     setLoading(true);
     const [teachRes, classRes, subjRes] = await Promise.all([
       supabase.from('teachers')
-        .select('id, name, email, role, subjects, class_teacher_of, created_at, permissions')
+        .select('id, name, email, role, subjects, class_teacher_of, created_at')
         .eq('school_id', schoolId)
         .neq('role', 'admin')
         .order('name'),

@@ -91,7 +91,7 @@ export default function AdminFeesView({ schoolId }: AdminCtx) {
           { label: 'Overdue', count: overdue, pct: total ? Math.round((overdue/total)*100) : 0, ...STATUS_CONFIG.overdue },
         ].map(({ label, count, pct, color, bg, border, icon: Icon }) => (
           <motion.div key={label} whileHover={{ y: -2 }}
-            className={`${bg} border ${border} rounded-2xl p-4 cursor-pointer`}
+            className={`${bg} border ${border} rounded-2xl p-4 cursor-pointer backdrop-blur-sm`}
             onClick={() => setFilterStatus(filterStatus === label.toLowerCase() ? '' : label.toLowerCase())}
           >
             <div className="flex items-center justify-between mb-2">
@@ -99,7 +99,7 @@ export default function AdminFeesView({ schoolId }: AdminCtx) {
               <span className={`text-xs font-black ${color}`}>{pct}%</span>
             </div>
             <p className={`text-2xl font-black ${color}`}>{count}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{label}</p>
+            <p className="text-[10px] text-slate-300 font-bold uppercase tracking-wider mt-1">{label}</p>
             {total > 0 && (
               <div className="mt-2 h-1 bg-slate-700/70 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full ${color.replace('text-','bg-')}`} style={{ width: `${pct}%` }} />
@@ -145,7 +145,7 @@ export default function AdminFeesView({ schoolId }: AdminCtx) {
       ) : (
         <div className="bg-slate-900/85 border border-slate-700/60 rounded-2xl text-white overflow-hidden backdrop-blur-sm">
           <div className="hidden sm:grid grid-cols-[1fr_100px_100px_180px] gap-3 px-5 py-2.5 border-b border-slate-700/40 text-[10px] text-slate-500 font-black uppercase tracking-wider">
-            <span>Student</span><span>Class</span><span>Roll No.</span><span>Status "" Update</span>
+            <span>Student</span><span>Class</span><span>Roll No.</span><span>Status -- Update</span>
           </div>
           <div className="divide-y divide-slate-700/30">
             {filtered.map(s => {
