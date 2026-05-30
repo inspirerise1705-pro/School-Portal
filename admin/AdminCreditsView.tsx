@@ -4,8 +4,26 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Zap, Search, Plus, Check, X, Loader2,
-  TrendingUp, TrendingDown, Clock,
+  TrendingUp, TrendingDown, Clock, Minus,
 } from 'lucide-react';
+
+function Cb({ checked, indeterminate, onChange }: { checked: boolean; indeterminate?: boolean; onChange: () => void }) {
+  return (
+    <button type="button" onClick={onChange}
+      className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-all shrink-0 ${
+        checked || indeterminate
+          ? 'bg-primary-600 border-primary-600'
+          : 'bg-slate-800 border-slate-600 hover:border-primary-500'
+      }`}
+    >
+      {indeterminate
+        ? <Minus className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+        : checked
+          ? <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+          : null}
+    </button>
+  );
+}
 import { supabase } from '../lib/supabase';
 import type { AdminCtx } from '../AdminApp';
 
@@ -248,22 +266,21 @@ export default function AdminCreditsView({ schoolId, adminId }: AdminCtx) {
           )}
 
           <div className="bg-slate-900/85 border border-slate-700/60 rounded-2xl text-white overflow-hidden backdrop-blur-sm">
-            <div className="hidden sm:grid grid-cols-[32px_1fr_100px_100px_100px_80px] gap-3 px-5 py-2.5 border-b border-slate-700/40 text-[10px] text-slate-500 font-black uppercase tracking-wider">
-              <input type="checkbox"
-                checked={selected.size === filtered.filter(s => s.user_id).length && filtered.filter(s => s.user_id).length > 0}
-                onChange={e => e.target.checked ? selectAll() : clearSel()}
-                className="rounded border-slate-600 bg-slate-800 text-primary-600 cursor-pointer" />
-              <span>Student</span><span>Class</span><span>Balance</span><span>Used</span><span></span>
+            <div className="grid grid-cols-[20px_1fr_80px_80px_80px_72px] sm:grid-cols-[20px_1fr_100px_100px_100px_80px] gap-3 px-5 py-2.5 border-b border-slate-700/40 text-[10px] text-slate-500 font-black uppercase tracking-wider items-center">
+              <Cb
+                checked={selected.size > 0 && selected.size === filtered.filter(s => s.user_id).length}
+                indeterminate={selected.size > 0 && selected.size < filtered.filter(s => s.user_id).length}
+                onChange={() => selected.size > 0 ? clearSel() : selectAll()}
+              />
+              <span>Student</span><span className="hidden sm:block">Class</span><span>Balance</span><span className="hidden sm:block">Used</span><span></span>
             </div>
             <div className="divide-y divide-slate-700/30">
               {filtered.map(s => (
-                <div key={s.student_id} className="flex sm:grid sm:grid-cols-[32px_1fr_100px_100px_100px_80px] items-center gap-3 px-5 py-3">
-                  <div className="hidden sm:flex items-center">
-                    {s.user_id ? (
-                      <input type="checkbox" checked={selected.has(s.user_id)}
-                        onChange={() => toggleSelect(s.user_id!)}
-                        className="rounded border-slate-600 bg-slate-800 text-primary-600 cursor-pointer" />
-                    ) : <span className="h-4 w-4" />}
+                <div key={s.student_id} className="grid grid-cols-[20px_1fr_80px_80px_80px_72px] sm:grid-cols-[20px_1fr_100px_100px_100px_80px] items-center gap-3 px-5 py-3">
+                  <div className="flex items-center">
+                    {s.user_id
+                      ? <Cb checked={selected.has(s.user_id)} onChange={() => toggleSelect(s.user_id!)} />
+                      : <span className="h-4 w-4" />}
                   </div>
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="h-7 w-7 rounded-lg bg-primary-500/15 flex items-center justify-center shrink-0 text-xs font-black text-primary-400">
