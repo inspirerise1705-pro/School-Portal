@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   GraduationCap, Search, Plus, Edit2, X, Check,
-  Loader2, Filter, ChevronDown, Shield,
+  Loader2, Filter, ChevronDown, Shield, Download, Upload,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { AdminCtx } from '../AdminApp';
@@ -121,6 +121,48 @@ export default function AdminStudentsView({ schoolId }: AdminCtx) {
     setSaving(false);
     setAdding(false);
     setAddForm({ name: '', email: '', roll_number: '', class_id: '', fees_status: 'pending' });
+    fetchAll();
+  };
+
+  const exportCSV = () => {
+    if (!students.length) return;
+    const rows = students.map(s => ({
+      Name: s.name, Email: s.email ?? '', RollNumber: s.roll_number ?? '',
+      Class: s.class_name, FeesStatus: s.fees_status,
+    }));
+    const csv = [Object.keys(rows[0]).join(','), ...rows.map(r => Object.values(r).map(v => `"${v}"`).join(','))].join('\n');
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: 'students.csv' });
+    a.click();
+  };
+
+  const importCSV = async (file: File) => {
+    const text = await file.text();
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return;
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
+    const nameIdx = headers.findIndex(h => h.includes('name'));
+    const emailIdx = headers.findIndex(h => h.includes('email'));
+    const rollIdx  = headers.findIndex(h => h.includes('roll'));
+    const classNameIdx = headers.findIndex(h => h === 'class' || h === 'classname' || h === 'class name');
+    const sectionIdx   = headers.findIndex(h => h.includes('section'));
+    const feesIdx  = headers.findIndex(h => h.includes('fees'));
+
+    const rows = lines.slice(1).map(l => l.split(',').map(v => v.trim().replace(/"/g, '')));
+    for (const row of rows) {
+      const name = row[nameIdx] ?? ''; if (!name) continue;
+      const className = classNameIdx >= 0 ? row[classNameIdx] : '';
+      const section   = sectionIdx >= 0 ? row[sectionIdx] : '';
+      let classId: string | null = null;
+      if (className && section) {
+        const match = classes.find(c => c.name.toLowerCase() === className.toLowerCase() && c.section.toLowerCase() === section.toLowerCase());
+        classId = match?.id ?? null;
+      }
+      await supabase.from('students').insert({
+        school_id: schoolId, name, class_id: classId,
+        email: row[emailIdx] || null, roll_number: row[rollIdx] || null,
+        fees_status: (row[feesIdx] || 'pending') as 'paid' | 'pending' | 'overdue',
+      });
+    }
     fetchAll();
   };
 
@@ -244,10 +286,20 @@ export default function AdminStudentsView({ schoolId }: AdminCtx) {
           <h1 className="text-xl sm:text-2xl font-black tracking-tight">Students</h1>
           <p className="text-sm opacity-75 mt-1">{students.length} enrolled · {filtered.length} shown</p>
         </div>
-        <button onClick={() => setAdding(true)}
-          className="flex items-center gap-2 rounded-xl bg-primary-600 hover:bg-primary-500 px-4 py-2.5 text-sm font-black transition">
-          <Plus className="h-4 w-4" /> Add Student
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={exportCSV}
+            className="flex items-center gap-2 rounded-xl bg-slate-700/80 hover:bg-slate-700 px-3 py-2.5 text-sm font-bold transition text-slate-300">
+            <Download className="h-4 w-4" /> Export CSV
+          </button>
+          <label className="flex items-center gap-2 rounded-xl bg-slate-700/80 hover:bg-slate-700 px-3 py-2.5 text-sm font-bold transition text-slate-300 cursor-pointer">
+            <Upload className="h-4 w-4" /> Import CSV
+            <input type="file" accept=".csv" className="hidden" onChange={e => { if (e.target.files?.[0]) importCSV(e.target.files[0]); e.target.value = ''; }} />
+          </label>
+          <button onClick={() => setAdding(true)}
+            className="flex items-center gap-2 rounded-xl bg-primary-600 hover:bg-primary-500 px-4 py-2.5 text-sm font-black transition">
+            <Plus className="h-4 w-4" /> Add Student
+          </button>
+        </div>
       </div>
 
       {/* Search + filters */}
