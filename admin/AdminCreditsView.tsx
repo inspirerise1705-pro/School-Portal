@@ -86,7 +86,7 @@ export default function AdminCreditsView({ schoolId, adminId }: AdminCtx) {
       const bal = balMap.get(s.user_id) as any;
       return {
         student_id: s.id, name: s.name,
-        class_name: s.classes ? `${s.classes.name} ${s.classes.section}` : '""',
+        class_name: s.classes ? `${s.classes.name} ${s.classes.section}` : 'Unassigned',
         user_id: s.user_id,
         balance:   bal?.balance           ?? 0,
         allocated: bal?.total_allocated   ?? 0,
