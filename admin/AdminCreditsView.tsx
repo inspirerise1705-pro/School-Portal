@@ -44,6 +44,26 @@ export default function AdminCreditsView({ schoolId, adminId }: AdminCtx) {
   const [allocNote,   setAllocNote]   = useState('Principal allocation');
   const [saving,      setSaving]      = useState(false);
   const [activeTab,   setActiveTab]   = useState<'balances' | 'requests'>('balances');
+  const [selected,    setSelected]    = useState<Set<string>>(new Set());
+
+  const toggleSelect = (userId: string) =>
+    setSelected(prev => { const n = new Set(prev); n.has(userId) ? n.delete(userId) : n.add(userId); return n; });
+  const selectAll = () => setSelected(new Set(filtered.filter(s => s.user_id).map(s => s.user_id!)));
+  const clearSel  = () => setSelected(new Set());
+
+  const handleBulkAllocate = async () => {
+    if (!selected.size) return;
+    const amount = parseInt(allocAmt, 10);
+    if (!amount || amount <= 0) return;
+    setSaving(true);
+    await Promise.all([...selected].map(uid =>
+      (supabase as any).rpc('admin_allocate_credits', {
+        p_student_user_id: uid, p_amount: amount,
+        p_description: allocNote || 'Principal allocation',
+      })
+    ));
+    setSaving(false); clearSel(); setAllocAmt('50'); fetchAll();
+  };
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -208,13 +228,43 @@ export default function AdminCreditsView({ schoolId, adminId }: AdminCtx) {
             </select>
           </div>
 
+          {/* Bulk action bar */}
+          {selected.size > 0 && (
+            <div className="flex items-center gap-3 bg-primary-600/15 border border-primary-500/30 rounded-2xl px-4 py-3 flex-wrap">
+              <span className="text-sm font-black text-primary-300">{selected.size} student{selected.size > 1 ? 's' : ''} selected</span>
+              <div className="flex items-center gap-2 ml-auto flex-wrap">
+                <input type="number" min="1" max="500" value={allocAmt}
+                  onChange={e => setAllocAmt(e.target.value)}
+                  className="w-20 text-center rounded-xl bg-slate-800/95 border border-slate-600/80 px-2 py-1.5 text-sm font-black text-white focus:outline-none transition" />
+                <span className="text-xs text-slate-400">credits each</span>
+                <button onClick={handleBulkAllocate} disabled={saving}
+                  className="flex items-center gap-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 px-4 py-2 text-sm font-black text-white transition disabled:opacity-50">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Allocate
+                </button>
+                <button onClick={clearSel} className="text-xs text-slate-400 hover:text-white transition font-semibold">Clear</button>
+              </div>
+            </div>
+          )}
+
           <div className="bg-slate-900/85 border border-slate-700/60 rounded-2xl text-white overflow-hidden backdrop-blur-sm">
-            <div className="hidden sm:grid grid-cols-[1fr_100px_100px_100px_80px] gap-3 px-5 py-2.5 border-b border-slate-700/40 text-[10px] text-slate-500 font-black uppercase tracking-wider">
+            <div className="hidden sm:grid grid-cols-[32px_1fr_100px_100px_100px_80px] gap-3 px-5 py-2.5 border-b border-slate-700/40 text-[10px] text-slate-500 font-black uppercase tracking-wider">
+              <input type="checkbox"
+                checked={selected.size === filtered.filter(s => s.user_id).length && filtered.filter(s => s.user_id).length > 0}
+                onChange={e => e.target.checked ? selectAll() : clearSel()}
+                className="rounded border-slate-600 bg-slate-800 text-primary-600 cursor-pointer" />
               <span>Student</span><span>Class</span><span>Balance</span><span>Used</span><span></span>
             </div>
             <div className="divide-y divide-slate-700/30">
               {filtered.map(s => (
-                <div key={s.student_id} className="flex sm:grid sm:grid-cols-[1fr_100px_100px_100px_80px] items-center gap-3 px-5 py-3">
+                <div key={s.student_id} className="flex sm:grid sm:grid-cols-[32px_1fr_100px_100px_100px_80px] items-center gap-3 px-5 py-3">
+                  <div className="hidden sm:flex items-center">
+                    {s.user_id ? (
+                      <input type="checkbox" checked={selected.has(s.user_id)}
+                        onChange={() => toggleSelect(s.user_id!)}
+                        className="rounded border-slate-600 bg-slate-800 text-primary-600 cursor-pointer" />
+                    ) : <span className="h-4 w-4" />}
+                  </div>
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="h-7 w-7 rounded-lg bg-primary-500/15 flex items-center justify-center shrink-0 text-xs font-black text-primary-400">
                       {s.name?.[0]?.toUpperCase()}

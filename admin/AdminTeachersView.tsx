@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Users, Search, Plus, Edit2, X, Check, Loader2,
   BookOpen, ChevronDown, ChevronUp, Mail, Shield,
+  Download, Upload, Eye, EyeOff, CheckCircle2,
 } from 'lucide-react';
+import { adminSupabase } from '../lib/adminSupabase';
 import { supabase } from '../lib/supabase';
 import type { AdminCtx } from '../AdminApp';
 
@@ -58,6 +60,56 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
   const [showAdd,     setShowAdd]     = useState(false);
   const [permSaving,  setPermSaving]  = useState<string | null>(null);
   const [localPerms,  setLocalPerms]  = useState<Record<string, Record<string, boolean>>>({});
+
+  const [addForm, setAddForm] = useState({ name: '', email: '', password: '', class_teacher_of: '', subjects: [] as string[] });
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addDone,  setAddDone]  = useState(false);
+  const [showPw,   setShowPw]   = useState(false);
+
+  const handleAddTeacher = async () => {
+    if (!addForm.name.trim() || !addForm.email.trim() || !addForm.password) {
+      setAddError('Name, email and password are required.'); return;
+    }
+    setSaving(true); setAddError(null);
+
+    if (!adminSupabase) {
+      setAddError('Add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env file to enable direct teacher creation.'); setSaving(false); return;
+    }
+
+    const { data: ud, error: authErr } = await (adminSupabase as any).auth.admin.createUser({
+      email: addForm.email.trim(), password: addForm.password, email_confirm: true,
+    });
+    if (authErr || !ud?.user) { setAddError(authErr?.message ?? 'Auth error'); setSaving(false); return; }
+
+    const { error: dbErr } = await supabase.from('teachers').insert({
+      id: ud.user.id, school_id: schoolId,
+      name: addForm.name.trim(), email: addForm.email.trim(),
+      role: 'teacher', subjects: addForm.subjects,
+      class_teacher_of: addForm.class_teacher_of.trim() || null,
+    });
+    if (dbErr) {
+      await (adminSupabase as any).auth.admin.deleteUser(ud.user.id);
+      setAddError(dbErr.message); setSaving(false); return;
+    }
+
+    setAddDone(true); setSaving(false);
+    setAddForm({ name: '', email: '', password: '', class_teacher_of: '', subjects: [] });
+    fetchAll();
+    setTimeout(() => { setAddDone(false); setShowAdd(false); }, 2500);
+  };
+
+  const exportTeachersCSV = () => {
+    if (!teachers.length) return;
+    const rows = teachers.map(t => ({
+      Name: t.name, Email: t.email, Role: t.role,
+      Subjects: t.subjects.join('; '),
+      ClassTeacherOf: t.class_teacher_of ?? '',
+      Joined: new Date(t.created_at).toLocaleDateString('en-IN'),
+    }));
+    const csv = [Object.keys(rows[0]).join(','), ...rows.map(r => Object.values(r).map(v => `"${v}"`).join(','))].join('\n');
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: 'teachers.csv' });
+    a.click();
+  };
 
   const getPerms = (t: Teacher) => localPerms[t.id] ?? t.permissions ?? {};
   const togglePerm = async (teacher: Teacher, key: string) => {
@@ -143,12 +195,16 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
           <h1 className="text-xl sm:text-2xl font-black tracking-tight">Teachers</h1>
           <p className="text-sm opacity-75 mt-1">{teachers.length} staff members</p>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 rounded-xl bg-primary-600 hover:bg-primary-500 px-4 py-2.5 text-sm font-black transition"
-        >
-          <Plus className="h-4 w-4" /> Add Teacher
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportTeachersCSV}
+            className="flex items-center gap-2 rounded-xl bg-slate-700/80 hover:bg-slate-700 px-3 py-2.5 text-sm font-bold transition text-slate-300">
+            <Download className="h-4 w-4" /> Export
+          </button>
+          <button onClick={() => { setShowAdd(true); setAddError(null); setAddDone(false); }}
+            className="flex items-center gap-2 rounded-xl bg-primary-600 hover:bg-primary-500 px-4 py-2.5 text-sm font-black transition">
+            <Plus className="h-4 w-4" /> Add Teacher
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -359,7 +415,7 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
         )}
       </AnimatePresence>
 
-      {/* Add Teacher instructions modal */}
+      {/* Add Teacher modal */}
       <AnimatePresence>
         {showAdd && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -367,46 +423,99 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
               className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowAdd(false)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="relative bg-[#0f1629] border border-slate-700/50 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+              className="relative bg-[#0f1629] border border-slate-700/50 rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-black">Add a Teacher</h2>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-black text-white">Add New Teacher</h2>
                 <button onClick={() => setShowAdd(false)} className="h-8 w-8 rounded-lg hover:bg-slate-700 flex items-center justify-center">
                   <X className="h-4 w-4 text-slate-400" />
                 </button>
               </div>
-              <div className="space-y-3 text-sm text-slate-300">
-                <p className="text-slate-400">Follow these two steps to add a new teacher:</p>
-                <div className="bg-slate-800/80 rounded-xl p-4 space-y-3">
-                  <div className="flex gap-3">
-                    <span className="h-6 w-6 rounded-full bg-primary-600 text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">1</span>
-                    <div>
-                      <p className="font-bold">Create auth account in Supabase</p>
-                      <p className="text-slate-400 text-xs mt-0.5">Go to Supabase â†' Authentication â†' Users â†' Invite User. Enter their email.</p>
+
+              {addDone ? (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <CheckCircle2 className="h-12 w-12 text-emerald-400" />
+                  <p className="text-white font-black">Teacher added successfully!</p>
+                  <p className="text-slate-400 text-sm text-center">They can now log in with their email and password.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {[
+                    { key: 'name',  label: 'Full Name *',  type: 'text',     placeholder: 'Ms. Priya Iyer'         },
+                    { key: 'email', label: 'Email *',       type: 'email',    placeholder: 'priya@school.edu'       },
+                  ].map(({ key, label, type, placeholder }) => (
+                    <div key={key}>
+                      <label className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">{label}</label>
+                      <input type={type} value={(addForm as any)[key]} placeholder={placeholder}
+                        onChange={e => setAddForm(f => ({ ...f, [key]: e.target.value }))}
+                        className="mt-1 w-full rounded-xl bg-slate-800/95 border border-slate-600/80 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary-500/50 transition" />
+                    </div>
+                  ))}
+
+                  {/* Password */}
+                  <div>
+                    <label className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Password *</label>
+                    <div className="relative mt-1">
+                      <input type={showPw ? 'text' : 'password'} value={addForm.password}
+                        placeholder="Min 8 characters"
+                        onChange={e => setAddForm(f => ({ ...f, password: e.target.value }))}
+                        className="w-full rounded-xl bg-slate-800/95 border border-slate-600/80 pl-3 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary-500/50 transition" />
+                      <button type="button" onClick={() => setShowPw(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition">
+                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <span className="h-6 w-6 rounded-full bg-primary-600 text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">2</span>
-                    <div>
-                      <p className="font-bold">Run this SQL with their new auth user ID</p>
-                      <pre className="mt-1.5 text-[10px] bg-slate-900 rounded-lg p-3 text-emerald-300 overflow-x-auto whitespace-pre-wrap">{`INSERT INTO teachers (id, school_id, name, email, role, subjects)
-VALUES (
-  '<auth-user-id>',
-  '${schoolId}',
-  'Teacher Name',
-  'teacher@school.edu',
-  'teacher',
-  ARRAY['Mathematics']
-);`}</pre>
+
+                  {/* Class teacher of */}
+                  <div>
+                    <label className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Class Teacher Of</label>
+                    <select value={addForm.class_teacher_of}
+                      onChange={e => setAddForm(f => ({ ...f, class_teacher_of: e.target.value }))}
+                      className="mt-1 w-full rounded-xl bg-slate-800/95 border border-slate-600/80 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary-500/50 transition">
+                      <option value="">-- Not a class teacher --</option>
+                      {classes.map(c => <option key={c.id} value={`${c.name} ${c.section}`}>{c.name} {c.section}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Subjects */}
+                  <div>
+                    <label className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">Subjects</label>
+                    <div className="flex flex-wrap gap-2">
+                      {subjects.map(sub => {
+                        const sel = addForm.subjects.includes(sub.name);
+                        return (
+                          <button key={sub.id} type="button"
+                            onClick={() => setAddForm(f => ({ ...f, subjects: sel ? f.subjects.filter(x => x !== sub.name) : [...f.subjects, sub.name] }))}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${sel ? 'bg-primary-600 border-primary-500 text-white' : 'bg-slate-800 border-slate-600/40 text-slate-400 hover:border-slate-500'}`}>
+                            {sub.name}
+                          </button>
+                        );
+                      })}
                     </div>
+                  </div>
+
+                  {addError && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{addError}</p>}
+
+                  {!adminSupabase && (
+                    <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
+                      Add <code className="font-mono">VITE_SUPABASE_SERVICE_ROLE_KEY</code> to your .env to enable direct creation.
+                    </p>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => setShowAdd(false)}
+                      className="flex-1 rounded-xl bg-slate-700/70 px-4 py-2.5 text-sm font-bold hover:bg-slate-700 transition text-white">
+                      Cancel
+                    </button>
+                    <button onClick={handleAddTeacher} disabled={saving}
+                      className="flex-1 rounded-xl bg-primary-600 hover:bg-primary-500 px-4 py-2.5 text-sm font-black text-white transition disabled:opacity-50 flex items-center justify-center gap-2">
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                      Create Teacher
+                    </button>
                   </div>
                 </div>
-                <p className="text-xs text-slate-500">Once done, the teacher will appear here after their next login.</p>
-              </div>
-              <button onClick={() => setShowAdd(false)}
-                className="mt-5 w-full rounded-xl bg-primary-600 hover:bg-primary-500 py-2.5 text-sm font-black transition">
-                Got it
-              </button>
+              )}
             </motion.div>
           </div>
         )}
