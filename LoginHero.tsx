@@ -6,7 +6,7 @@ import { Sparkles } from 'lucide-react';
 const headingLines = [
   'Build the future',
   'of learning',
-  'with Scrolls School',
+  'with InspireRise',
 ];
 
 const splitTextVariants = {
@@ -39,7 +39,7 @@ export default function LoginHero() {
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white">
               <Sparkles className="h-5 w-5" />
             </span>
-            Scrolls School
+            InspireRise
           </motion.div>
 
           <div className="space-y-4">

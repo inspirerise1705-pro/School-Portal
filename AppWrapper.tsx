@@ -33,7 +33,7 @@ export default function AppWrapper() {
         style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
       >
         <div className="mx-auto max-w-6xl px-6 py-10 text-center">
-          <h1 className="text-3xl font-semibold">Scrolls School dashboard ready</h1>
+          <h1 className="text-3xl font-semibold">InspireRise dashboard ready</h1>
           <p className="mt-4 text-slate-300">Your learning environment appears after the branded loader completes.</p>
         </div>
       </motion.div>

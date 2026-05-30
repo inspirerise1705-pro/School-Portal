@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen,
   CalendarDays, DollarSign, Zap, BarChart3,
-  Settings, LogOut, School,
+  Settings, LogOut,
 } from 'lucide-react';
 
 interface Props {
@@ -36,12 +36,13 @@ export default function AdminSidebar({ activeTab, onNavigate, adminName, schoolN
       <div className="flex items-center gap-4 mb-12 px-2 shrink-0 group cursor-pointer">
         <div className="relative">
           <div className="absolute -inset-1 bg-primary-500 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all" />
-          <div className="relative w-12 h-12 bg-neutral-900 dark:bg-primary-500 rounded-2xl flex items-center justify-center shadow-2xl transition-transform">
-            <School className="text-white w-7 h-7" />
+          <div className="relative w-12 h-12 rounded-2xl overflow-hidden shadow-2xl transition-transform bg-white dark:bg-neutral-900 flex items-center justify-center">
+            <img src="/logos/blue-favicon.png" alt="InspireRise" className="w-9 h-9 object-contain dark:hidden" />
+            <img src="/logos/white-favicon.png" alt="InspireRise" className="w-9 h-9 object-contain hidden dark:block" />
           </div>
         </div>
         <div>
-          <span className="block font-black text-2xl tracking-tighter text-neutral-900 dark:text-white leading-none">PRISM</span>
+          <span className="block font-black text-2xl tracking-tighter text-neutral-900 dark:text-white leading-none">InspireRise</span>
           <span className="block text-[10px] font-black tracking-[0.3em] text-primary-500 uppercase mt-1">Principal</span>
         </div>
       </div>

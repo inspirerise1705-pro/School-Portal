@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { School, ArrowRight, Lock, Mail, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, Lock, Mail, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 interface LoginProps {
@@ -75,8 +75,8 @@ export default function Login({ onLogin }: LoginProps) {
         <div className="w-full space-y-10 px-4 py-6 sm:px-6 lg:px-10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-4 py-3 text-sm uppercase tracking-[0.35em] text-white shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white">
-                <School className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
+                <img src="/logos/white-favicon.png" alt="InspireRise" className="h-6 w-6 object-contain" />
               </div>
               InspireRise
             </div>
