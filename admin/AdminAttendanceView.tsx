@@ -135,9 +135,9 @@ export default function AdminAttendanceView({ schoolId }: AdminCtx) {
               { label: 'Absent',  count: totalAbsent,  pct: Math.round((totalAbsent/totalMarked)*100),  color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/20'     },
               { label: 'Marked',  count: totalMarked,  pct: 100,                                        color: 'text-slate-300',   bg: 'bg-slate-700/50',   border: 'border-slate-600/30'   },
             ].map(({ label, count, pct, color, bg, border }) => (
-              <div key={label} className={`${bg} border ${border} rounded-2xl p-4`}>
+              <div key={label} className={`${bg} border ${border} rounded-2xl p-4 backdrop-blur-sm`}>
                 <p className={`text-2xl font-black ${color}`}>{count}</p>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{label}</p>
+                <p className="text-[10px] text-slate-300 font-bold uppercase tracking-wider mt-1">{label}</p>
                 <p className={`text-xs ${color} font-semibold mt-0.5`}>{pct}%</p>
               </div>
             ))}

@@ -174,9 +174,9 @@ export default function AdminCreditsView({ schoolId, adminId }: AdminCtx) {
           { label: 'Total Used',      value: totalUsed,      color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20'   },
           { label: 'Total Balance',   value: totalBalance,   color: 'text-emerald-400',bg: 'bg-emerald-500/10',border: 'border-emerald-500/20' },
         ].map(({ label, value, color, bg, border }) => (
-          <div key={label} className={`${bg} border ${border} rounded-2xl p-4`}>
+          <div key={label} className={`${bg} border ${border} rounded-2xl p-4 backdrop-blur-sm`}>
             <p className={`text-2xl font-black ${color}`}>{value.toLocaleString()}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{label}</p>
+            <p className="text-[10px] text-slate-300 font-bold uppercase tracking-wider mt-1">{label}</p>
           </div>
         ))}
       </div>
@@ -298,7 +298,7 @@ export default function AdminCreditsView({ schoolId, adminId }: AdminCtx) {
                     <label className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Target Class</label>
                     <select value={bulkClass} onChange={e => setBulkClass(e.target.value)}
                       className="mt-1 w-full rounded-xl bg-slate-800/95 border border-slate-600/80 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary-500/50 transition">
-                      <option value="">"" Select class ""</option>
+                      <option value="">-- Select class --</option>
                       {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
                     </select>
                   </div>

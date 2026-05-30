@@ -148,7 +148,7 @@ export default function AdminDashboardView({ schoolId }: AdminCtx) {
             <StatCard icon={Users}         label="Teachers"  value={stats.teachers}  sub="Active staff"        color="text-blue-400"   bg="bg-blue-500/15"   />
             <StatCard icon={GraduationCap} label="Students"  value={stats.students}  sub="Enrolled"            color="text-primary-400" bg="bg-primary-500/15" />
             <StatCard icon={BookOpen}      label="Classes"   value={stats.classes}   sub="Active sections"     color="text-emerald-400" bg="bg-emerald-500/15" />
-            <StatCard icon={BarChart3}     label="Today Att."value={attPct !== null ? `${attPct}%` : '""'}  sub={`${stats.todayPresent}/${stats.todayTotal} marked`} color="text-amber-400" bg="bg-amber-500/15" />
+            <StatCard icon={BarChart3}     label="Today Att."value={attPct !== null ? `${attPct}%` : '-'}  sub={`${stats.todayPresent}/${stats.todayTotal} marked`} color="text-amber-400" bg="bg-amber-500/15" />
           </div>
 
           {/* â"€â"€ Fees + Credits â"€â"€ */}
@@ -166,9 +166,9 @@ export default function AdminDashboardView({ schoolId }: AdminCtx) {
                   { label: 'Pending', count: stats.feesPending, color: 'text-amber-400',   bg: 'bg-amber-500/15',   border: 'border-amber-500/20'   },
                   { label: 'Overdue', count: stats.feesOverdue, color: 'text-red-400',     bg: 'bg-red-500/15',     border: 'border-red-500/20'     },
                 ].map(({ label, count, color, bg, border }) => (
-                  <div key={label} className={`${bg} border ${border} rounded-xl p-3 text-center`}>
+                  <div key={label} className={`${bg} border ${border} rounded-xl p-3 text-center backdrop-blur-sm`}>
                     <p className={`text-2xl font-black ${color}`}>{count}</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{label}</p>
+                    <p className="text-[10px] text-slate-300 font-bold uppercase tracking-wider mt-1">{label}</p>
                   </div>
                 ))}
               </div>
@@ -260,7 +260,7 @@ export default function AdminDashboardView({ schoolId }: AdminCtx) {
                       <BookOpen className="h-4 w-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold">{cls.name} "" {cls.section}</p>
+                      <p className="text-sm font-bold">{cls.name} -- {cls.section}</p>
                       <p className="text-xs text-slate-500">{cls.studentCount} students</p>
                     </div>
                     <div className="text-right shrink-0">

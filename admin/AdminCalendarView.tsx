@@ -397,7 +397,7 @@ export default function AdminCalendarView({ schoolId, adminId }: AdminCtx) {
                   {!form.is_global && (
                     <select value={form.class_id} onChange={e => setForm(f => ({ ...f, class_id: e.target.value }))}
                       className="mt-2 w-full rounded-xl bg-slate-800/95 border border-slate-600/80 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary-500/50 transition">
-                      <option value="">"" Select class ""</option>
+                      <option value="">-- Select class --</option>
                       {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
                     </select>
                   )}

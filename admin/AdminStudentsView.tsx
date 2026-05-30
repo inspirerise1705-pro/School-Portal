@@ -77,7 +77,7 @@ export default function AdminStudentsView({ schoolId }: AdminCtx) {
     setLoading(true);
     const [stuRes, clsRes] = await Promise.all([
       supabase.from('students')
-        .select('id, name, email, roll_number, fees_status, class_id, user_id, permissions, classes(name, section)')
+        .select('id, name, email, roll_number, fees_status, class_id, user_id, classes(name, section)')
         .eq('school_id', schoolId).order('name'),
       supabase.from('classes').select('id, name, section').eq('school_id', schoolId).order('name'),
     ]);
