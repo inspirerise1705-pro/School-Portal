@@ -71,31 +71,31 @@ BEGIN
   VALUES
     -- ── Upcoming (relative to today) ──────────────────────────────
     (v_school_id, NULL, 'PTM - Parent Teacher Meeting',
-      (CURRENT_DATE + 5)::TEXT,  'Announcement',
+      (CURRENT_DATE + 5)::DATE,  'Announcement',
       'All classes 9 AM to 1 PM. Parents must carry ID.',              TRUE, NULL),
 
     (v_school_id, NULL, 'Inter-House Debate Competition',
-      (CURRENT_DATE + 9)::TEXT,  'Activity',
+      (CURRENT_DATE + 9)::DATE,  'Activity',
       'English and Hindi rounds. Mandatory for Class 8 & 9.',          TRUE, NULL),
 
     (v_school_id, NULL, 'Mid-Term Examinations Begin',
-      (CURRENT_DATE + 14)::TEXT, 'Lecture',
+      (CURRENT_DATE + 14)::DATE, 'Lecture',
       'Exams for all grades 6-9. Revised schedule on notice board.',   TRUE, NULL),
 
     (v_school_id, NULL, 'Annual Sports Day',
-      (CURRENT_DATE + 21)::TEXT, 'Activity',
+      (CURRENT_DATE + 21)::DATE, 'Activity',
       'Ground events 8 AM - 2 PM. Students wear house colours.',       TRUE, NULL),
 
     (v_school_id, NULL, 'Science Exhibition',
-      (CURRENT_DATE + 28)::TEXT, 'Lecture',
+      (CURRENT_DATE + 28)::DATE, 'Lecture',
       'Class 8 and 9 projects on display. Parents welcome.',           TRUE, NULL),
 
     (v_school_id, NULL, 'Annual Day Rehearsal',
-      (CURRENT_DATE + 3)::TEXT,  'Activity',
+      (CURRENT_DATE + 3)::DATE,  'Activity',
       'All selected students report to auditorium by 3 PM.',           TRUE, NULL),
 
     (v_school_id, NULL, 'Term 1 Results Declaration',
-      (CURRENT_DATE + 35)::TEXT, 'Announcement',
+      (CURRENT_DATE + 35)::DATE, 'Announcement',
       'Report cards distributed period-wise.',                         TRUE, NULL),
 
     -- ── Fixed 2026 holidays ───────────────────────────────────────

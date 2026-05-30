@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Users, Search, Plus, Edit2, X, Check, Loader2,
@@ -46,6 +46,7 @@ interface EditState {
   name:             string;
   subjects:         string[];
   class_teacher_of: string;
+  permissions:      Record<string, boolean>;
 }
 
 export default function AdminTeachersView({ schoolId }: AdminCtx) {
@@ -64,7 +65,10 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
   const [addForm, setAddForm] = useState({ name: '', email: '', password: '', class_teacher_of: '', subjects: [] as string[] });
   const [addError, setAddError] = useState<string | null>(null);
   const [addDone,  setAddDone]  = useState(false);
-  const [showPw,   setShowPw]   = useState(false);
+  const [showPw,      setShowPw]      = useState(false);
+  const [importing,   setImporting]   = useState(false);
+  const [importResults, setImportResults] = useState<{ done: number; failed: { email: string; reason: string }[] } | null>(null);
+  const importRef = useRef<HTMLInputElement>(null);
 
   const handleAddTeacher = async () => {
     if (!addForm.name.trim() || !addForm.email.trim() || !addForm.password) {
@@ -109,6 +113,73 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
     const csv = [Object.keys(rows[0]).join(','), ...rows.map(r => Object.values(r).map(v => `"${v}"`).join(','))].join('\n');
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: 'teachers.csv' });
     a.click();
+  };
+
+  const downloadImportTemplate = () => {
+    const csv = 'Name,Email,Password,Subjects,ClassTeacherOf\n"Ms. Priya Iyer","priya@school.edu","Pass@1234","Math; Science","Class 8A"\n"Mr. Arjun Nair","arjun@school.edu","Pass@5678","History",""\n';
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: 'teachers_import_template.csv' });
+    a.click();
+  };
+
+  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    if (!adminSupabase) {
+      alert('Add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env to enable CSV import.');
+      return;
+    }
+
+    const text  = await file.text();
+    const lines = text.trim().split('\n').filter(l => l.trim());
+    if (lines.length < 2) { alert('CSV has no data rows.'); return; }
+
+    const headers   = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+    const nameIdx   = headers.indexOf('name');
+    const emailIdx  = headers.indexOf('email');
+    const passIdx   = headers.indexOf('password');
+    const subjIdx   = headers.indexOf('subjects');
+    const classIdx  = headers.indexOf('classteacherof');
+
+    if (nameIdx === -1 || emailIdx === -1 || passIdx === -1) {
+      alert('CSV must have Name, Email, and Password columns.'); return;
+    }
+
+    setImporting(true);
+    let done = 0;
+    const failed: { email: string; reason: string }[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols    = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+      const name    = cols[nameIdx]  ?? '';
+      const email   = cols[emailIdx] ?? '';
+      const pass    = cols[passIdx]  ?? '';
+      const subjects = subjIdx >= 0 && cols[subjIdx] ? cols[subjIdx].split(';').map(s => s.trim()).filter(Boolean) : [];
+      const classOf  = classIdx >= 0 ? (cols[classIdx] ?? '') : '';
+
+      if (!name || !email || !pass) {
+        failed.push({ email: email || `row ${i + 1}`, reason: 'Missing name, email, or password' }); continue;
+      }
+
+      const { data: ud, error: authErr } = await (adminSupabase as any).auth.admin.createUser({ email, password: pass, email_confirm: true });
+      if (authErr || !ud?.user) { failed.push({ email, reason: authErr?.message ?? 'Auth error' }); continue; }
+
+      const { error: dbErr } = await supabase.from('teachers').insert({
+        id: ud.user.id, school_id: schoolId,
+        name, email, role: 'teacher', subjects,
+        class_teacher_of: classOf || null,
+      });
+      if (dbErr) {
+        await (adminSupabase as any).auth.admin.deleteUser(ud.user.id);
+        failed.push({ email, reason: dbErr.message }); continue;
+      }
+      done++;
+    }
+
+    setImporting(false);
+    setImportResults({ done, failed });
+    if (done > 0) fetchAll();
   };
 
   const getPerms = (t: Teacher) => localPerms[t.id] ?? t.permissions ?? {};
@@ -167,8 +238,11 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
         name:             editing.name,
         subjects:         editing.subjects,
         class_teacher_of: editing.class_teacher_of || null,
-      })
+        permissions:      editing.permissions,
+      } as any)
       .eq('id', editing.id);
+    // Keep localPerms in sync
+    setLocalPerms(p => ({ ...p, [editing.id]: editing.permissions }));
     setSaving(false);
     setEditing(null);
     fetchAll();
@@ -200,6 +274,12 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
             className="flex items-center gap-2 rounded-xl bg-slate-700/80 hover:bg-slate-700 px-3 py-2.5 text-sm font-bold transition text-slate-300">
             <Download className="h-4 w-4" /> Export
           </button>
+          <button onClick={() => importRef.current?.click()} disabled={importing}
+            className="flex items-center gap-2 rounded-xl bg-slate-700/80 hover:bg-slate-700 px-3 py-2.5 text-sm font-bold transition text-slate-300 disabled:opacity-50">
+            {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {importing ? 'Importing…' : 'Import'}
+          </button>
+          <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
           <button onClick={() => { setShowAdd(true); setAddError(null); setAddDone(false); }}
             className="flex items-center gap-2 rounded-xl bg-primary-600 hover:bg-primary-500 px-4 py-2.5 text-sm font-black transition">
             <Plus className="h-4 w-4" /> Add Teacher
@@ -250,7 +330,7 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-                    onClick={() => setEditing({ id: teacher.id, name: teacher.name, subjects: teacher.subjects, class_teacher_of: teacher.class_teacher_of ?? '' })}
+                    onClick={() => setEditing({ id: teacher.id, name: teacher.name, subjects: teacher.subjects, class_teacher_of: teacher.class_teacher_of ?? '', permissions: localPerms[teacher.id] ?? {} })}
                     className="h-8 w-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"
                   >
                     <Edit2 className="h-3.5 w-3.5 text-slate-400" />
@@ -399,6 +479,24 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
                 </div>
               </div>
 
+              <div className="mt-4 pt-4 border-t border-slate-700/40">
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <Shield className="h-3.5 w-3.5 text-primary-400" />
+                  <p className="text-xs font-black text-slate-300 uppercase tracking-wider">Feature Permissions</p>
+                </div>
+                <div className="space-y-2">
+                  {TEACHER_PERMS.map(({ key, label }) => {
+                    const on = editing.permissions[key] ?? true;
+                    return (
+                      <div key={key} className="flex items-center justify-between gap-2 rounded-lg bg-slate-800/70 px-3 py-2">
+                        <span className="text-[11px] text-slate-300 font-semibold">{label}</span>
+                        <Toggle on={on} onToggle={() => setEditing(s => s && ({ ...s, permissions: { ...s.permissions, [key]: !on } }))} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="flex gap-2 mt-6">
                 <button onClick={() => setEditing(null)}
                   className="flex-1 rounded-xl bg-slate-700/70 px-4 py-2.5 text-sm font-bold hover:bg-slate-700 transition">
@@ -408,6 +506,60 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
                   className="flex-1 rounded-xl bg-primary-600 hover:bg-primary-500 px-4 py-2.5 text-sm font-black transition disabled:opacity-50 flex items-center justify-center gap-2">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                   Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Import Results modal */}
+      <AnimatePresence>
+        {importResults && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setImportResults(null)} />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="relative bg-[#0f1629] border border-slate-700/50 rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[80vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-black">Import Results</h2>
+                <button onClick={() => setImportResults(null)} className="h-8 w-8 rounded-lg hover:bg-slate-700 flex items-center justify-center">
+                  <X className="h-4 w-4 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="flex gap-3 mb-4">
+                <div className="flex-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-center">
+                  <p className="text-2xl font-black text-emerald-400">{importResults.done}</p>
+                  <p className="text-xs text-emerald-300 font-semibold mt-0.5">Added</p>
+                </div>
+                <div className="flex-1 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-center">
+                  <p className="text-2xl font-black text-red-400">{importResults.failed.length}</p>
+                  <p className="text-xs text-red-300 font-semibold mt-0.5">Failed</p>
+                </div>
+              </div>
+
+              {importResults.failed.length > 0 && (
+                <div className="overflow-y-auto flex-1 space-y-1.5 mb-4">
+                  {importResults.failed.map((f, i) => (
+                    <div key={i} className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">
+                      <p className="text-xs font-bold text-red-300">{f.email}</p>
+                      <p className="text-[11px] text-red-400/80 mt-0.5">{f.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="border-t border-slate-700/40 pt-3 flex items-center justify-between gap-2">
+                <button onClick={downloadImportTemplate}
+                  className="text-xs text-primary-400 hover:text-primary-300 font-semibold transition flex items-center gap-1">
+                  <Download className="h-3.5 w-3.5" /> Download template
+                </button>
+                <button onClick={() => setImportResults(null)}
+                  className="rounded-xl bg-slate-700 hover:bg-slate-600 px-4 py-2 text-sm font-bold transition">
+                  Done
                 </button>
               </div>
             </motion.div>

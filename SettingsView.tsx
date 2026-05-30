@@ -10,7 +10,6 @@ import {
   Zap,
   Check,
   GraduationCap,
-  School
 } from 'lucide-react';
 import { Teacher } from './types';
 import { WALLPAPERS, WallpaperType } from './constants';
@@ -172,10 +171,11 @@ export default function SettingsView({
           <div className="space-y-6">
             <div className="glass-card p-8 bg-white/90 dark:bg-neutral-900/90 border border-white/20 dark:border-white/10 shadow-xl rounded-[2.5rem]">
               <div className="text-center">
-                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-[2.25rem] bg-primary-500/10 text-primary-500 shadow-2xl">
-                  <School className="w-12 h-12" />
+                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-[2.25rem] bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden">
+                  <img src="/logos/blue-main.png" alt="InspireRise" className="w-16 h-16 object-contain dark:hidden" />
+                  <img src="/logos/white-main.png" alt="InspireRise" className="w-16 h-16 object-contain hidden dark:block" />
                 </div>
-                <h3 className="text-2xl font-black text-neutral-900 dark:text-white">Scrolls School</h3>
+                <h3 className="text-2xl font-black text-neutral-900 dark:text-white">InspireRise</h3>
                 <p className="text-xs uppercase tracking-[0.3em] text-primary-500 mt-2">Institution Portal</p>
               </div>
               <div className="mt-8 grid gap-4">
