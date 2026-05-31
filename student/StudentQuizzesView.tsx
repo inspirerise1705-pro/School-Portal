@@ -8,6 +8,7 @@ import {
   Filter, Search, Play, Eye, Star, Timer
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { dedupSubjects } from '../lib/dedupSubjects';
 import type { StudentProfile, QuizData, QuizSubmissionData, SubjectData, ChapterData } from '../types';
 import { DUMMY_ENRICHED_QUIZZES, DUMMY_SUBJECTS } from './dummyStudentData';
 
@@ -445,7 +446,7 @@ export default function StudentQuizzesView({ student, creditBalance, deductCredi
     });
 
     setQuizzes(enriched.length > 0 ? enriched : DUMMY_ENRICHED_QUIZZES as EnrichedQuiz[]);
-    setSubjects(subRes.data?.length ? (subRes.data as SubjectData[]) : DUMMY_SUBJECTS);
+    setSubjects(dedupSubjects(subRes.data?.length ? (subRes.data as SubjectData[]) : DUMMY_SUBJECTS));
     setLoading(false);
   }, [student]);
 
