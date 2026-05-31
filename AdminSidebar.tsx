@@ -36,9 +36,9 @@ export default function AdminSidebar({ activeTab, onNavigate, adminName, schoolN
       <div className="flex items-center gap-4 mb-12 px-2 shrink-0 group cursor-pointer">
         <div className="relative">
           <div className="absolute -inset-1 bg-primary-500 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all" />
-          <div className="relative w-12 h-12 rounded-2xl overflow-hidden shadow-2xl transition-transform bg-white dark:bg-neutral-900 flex items-center justify-center">
-            <img src="/logos/blue-favicon.png" alt="InspireRise" className="w-9 h-9 object-contain dark:hidden" />
-            <img src="/logos/white-favicon.png" alt="InspireRise" className="w-9 h-9 object-contain hidden dark:block" />
+          <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-2xl transition-transform bg-white dark:bg-neutral-900 flex items-center justify-center">
+            <img src="/logos/blue-favicon.png" alt="InspireRise" className="w-11 h-11 object-contain dark:hidden" />
+            <img src="/logos/white-favicon.png" alt="InspireRise" className="w-11 h-11 object-contain hidden dark:block" />
           </div>
         </div>
         <div>

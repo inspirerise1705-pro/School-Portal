@@ -41,7 +41,10 @@ export default function StudentApp({ session, onLogout }: StudentAppProps) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Theme
-  const [isDark, setIsDark]                 = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('ir_dark');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [currentWallpaper, setCurrentWallpaper] = useState<WallpaperType>(WALLPAPERS[0]);
 
   const wallpaperOverlay = isDark || currentWallpaper.textColor === 'light'
@@ -115,9 +118,9 @@ export default function StudentApp({ session, onLogout }: StudentAppProps) {
     if (data && data !== -1) setCreditBalance(data as number); // sync with DB value
   }, [session.user.id]);
 
-  // ── Theme persistence ─────────────────────────────────────────
   useEffect(() => {
-    document.body.classList.toggle('dark', isDark);
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('ir_dark', String(isDark));
   }, [isDark]);
 
   const handleNavigate = (tab: string) => {
