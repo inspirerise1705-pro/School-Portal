@@ -233,8 +233,11 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
   };
 
   const handleDeactivate = async (id: string) => {
-    if (!confirm('Remove this teacher from the school? They will lose access.')) return;
-    await supabase.from('teachers').update({ role: 'inactive' }).eq('id', id);
+    if (!confirm('Remove this teacher from the school? They will lose access immediately.')) return;
+    // Remove class assignments first to avoid foreign key conflicts
+    await supabase.from('teacher_classes').delete().eq('teacher_id', id);
+    const { error } = await supabase.from('teachers').delete().eq('id', id);
+    if (error) { alert('Failed to remove teacher: ' + error.message); return; }
     fetchAll();
   };
 
@@ -633,11 +636,6 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
 
                   {addError && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{addError}</p>}
 
-                  {!adminSupabase && (
-                    <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
-                      Add <code className="font-mono">VITE_SUPABASE_SERVICE_ROLE_KEY</code> to your .env to enable direct creation.
-                    </p>
-                  )}
 
                   <div className="flex gap-2 pt-1">
                     <button onClick={() => setShowAdd(false)}
