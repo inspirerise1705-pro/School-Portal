@@ -37,7 +37,10 @@ export default function AdminApp({ session, onLogout }: Props) {
   const [adminName,   setAdminName]   = useState('Admin');
   const [loading,     setLoading]     = useState(true);
 
-  const [isDark,           setIsDark]           = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('ir_dark');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [currentWallpaper, setCurrentWallpaper] = useState<WallpaperType>(WALLPAPERS[0]);
 
   const wallpaperOverlay = isDark || currentWallpaper.textColor === 'light'
@@ -61,7 +64,8 @@ export default function AdminApp({ session, onLogout }: Props) {
   }, [session.user.id]);
 
   useEffect(() => {
-    document.body.classList.toggle('dark', isDark);
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('ir_dark', String(isDark));
   }, [isDark]);
 
   const handleNavigate = (tab: string) => {

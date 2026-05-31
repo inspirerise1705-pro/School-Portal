@@ -47,7 +47,10 @@ export default function App() {
   const [showSidebar, setShowSidebar] = useState(false);
 
   // Theme & Appearance
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('ir_dark');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [currentWallpaper, setCurrentWallpaper] = useState<WallpaperType>(WALLPAPERS[0]);
 
   const wallpaperOverlay = isDark || currentWallpaper.textColor === 'light'
@@ -126,13 +129,9 @@ export default function App() {
     localStorage.removeItem('ir_role');
   };
 
-  // Persistence for theme
   useEffect(() => {
-    if (isDark) {
-      document.body.classList.add('dark');
-    } else {
-      document.body.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('ir_dark', String(isDark));
   }, [isDark]);
 
   const handleSelectStudent = (studentId: string | null) => {

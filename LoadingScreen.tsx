@@ -74,7 +74,7 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
       >
-        <img src="/logos/white-main.png" alt="InspireRise" className="h-6 w-auto object-contain opacity-80" />
+        <img src="/logos/white-main.png" alt="InspireRise" className="h-20 md:h-28 w-auto object-contain opacity-100" />
       </motion.div>
 
       <div className="absolute inset-0 flex items-center justify-center">
