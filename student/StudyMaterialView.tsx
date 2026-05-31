@@ -7,6 +7,7 @@ import {
   Clock, FileText, Eye, Download, X,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { dedupSubjects } from '../lib/dedupSubjects';
 import type { StudentProfile, StudyMaterialData, TaskData, SubjectData, ChapterData } from '../types';
 import { DUMMY_MATERIALS, DUMMY_TASKS, DUMMY_SUBJECTS, DUMMY_CHAPTERS } from './dummyStudentData';
 
@@ -67,7 +68,7 @@ export default function StudyMaterialView({ student }: Props) {
     const hasDbMaterials = !!matRes.data?.length;
     setMaterials(hasDbMaterials ? (matRes.data as StudyMaterialData[]) : DUMMY_MATERIALS);
     setTasks(taskRes.data?.length ? (taskRes.data as TaskData[]) : DUMMY_TASKS);
-    setSubjects(hasDbMaterials && subRes.data?.length ? (subRes.data as SubjectData[]) : DUMMY_SUBJECTS);
+    setSubjects(dedupSubjects(hasDbMaterials && subRes.data?.length ? (subRes.data as SubjectData[]) : DUMMY_SUBJECTS));
     setLoading(false);
   }, [student]);
 

@@ -7,6 +7,7 @@ import {
   XCircle, Loader2, AlertCircle, Clock, Zap, RotateCcw, Trophy
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { dedupSubjects } from '../lib/dedupSubjects';
 import { generatePracticeQuiz } from '../geminiService';
 import { CREDIT_COSTS } from '../types';
 import type { StudentProfile, SubjectData, ChapterData, QuizQuestion } from '../types';
@@ -57,7 +58,7 @@ export default function SelfPracticeView({ student, creditBalance, deductCredits
       .eq('school_id', student.school_id)
       .order('name')
       .then(({ data }) => {
-        setSubjects(data?.length ? (data as SubjectData[]) : DUMMY_SUBJECTS);
+        setSubjects(dedupSubjects(data?.length ? (data as SubjectData[]) : DUMMY_SUBJECTS));
         setLoading(false);
       });
   }, [student.school_id]);

@@ -7,6 +7,7 @@ import {
   Loader2, BookOpen, ChevronDown, X, AlertCircle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { dedupSubjects } from '../lib/dedupSubjects';
 import type { StudentProfile, DoubtData, SubjectData, ChapterData } from '../types';
 import { DUMMY_DOUBTS, DUMMY_SUBJECTS, DUMMY_CHAPTERS } from './dummyStudentData';
 
@@ -48,7 +49,7 @@ export default function DoubtBoxView({ student }: Props) {
         .order('name'),
     ]);
     setDoubts(dRes.data?.length ? (dRes.data as DoubtData[]) : DUMMY_DOUBTS);
-    setSubjects(sRes.data?.length ? (sRes.data as SubjectData[]) : DUMMY_SUBJECTS);
+    setSubjects(dedupSubjects(sRes.data?.length ? (sRes.data as SubjectData[]) : DUMMY_SUBJECTS));
     setLoading(false);
   }, [student]);
 

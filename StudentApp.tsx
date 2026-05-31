@@ -246,7 +246,7 @@ export default function StudentApp({ session, onLogout }: StudentAppProps) {
               {renderView()}
             </motion.div>
           </AnimatePresence>
-          <div className="h-6 md:h-12" />
+          {activeTab !== 'tutor' && <div className="h-6 md:h-12" />}
         </div>
       </main>
     </div>
