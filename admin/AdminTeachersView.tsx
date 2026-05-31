@@ -7,7 +7,6 @@ import {
   BookOpen, ChevronDown, ChevronUp, Mail, Shield,
   Download, Upload, Eye, EyeOff, CheckCircle2,
 } from 'lucide-react';
-import { adminSupabase } from '../lib/adminSupabase';
 import { supabase } from '../lib/supabase';
 import type { AdminCtx } from '../AdminApp';
 
@@ -76,24 +75,19 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
     }
     setSaving(true); setAddError(null);
 
-    if (!adminSupabase) {
-      setAddError('Add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env file to enable direct teacher creation.'); setSaving(false); return;
-    }
-
-    const { data: ud, error: authErr } = await (adminSupabase as any).auth.admin.createUser({
-      email: addForm.email.trim(), password: addForm.password, email_confirm: true,
+    const { data, error } = await supabase.functions.invoke('create-teacher', {
+      body: {
+        name: addForm.name.trim(),
+        email: addForm.email.trim(),
+        password: addForm.password,
+        subjects: addForm.subjects,
+        class_teacher_of: addForm.class_teacher_of.trim() || null,
+      },
     });
-    if (authErr || !ud?.user) { setAddError(authErr?.message ?? 'Auth error'); setSaving(false); return; }
 
-    const { error: dbErr } = await supabase.from('teachers').insert({
-      id: ud.user.id, school_id: schoolId,
-      name: addForm.name.trim(), email: addForm.email.trim(),
-      role: 'teacher', subjects: addForm.subjects,
-      class_teacher_of: addForm.class_teacher_of.trim() || null,
-    });
-    if (dbErr) {
-      await (adminSupabase as any).auth.admin.deleteUser(ud.user.id);
-      setAddError(dbErr.message); setSaving(false); return;
+    if (error || !data?.success) {
+      setAddError(data?.error ?? error?.message ?? 'Failed to create teacher');
+      setSaving(false); return;
     }
 
     setAddDone(true); setSaving(false);
@@ -126,11 +120,6 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
     if (!file) return;
     e.target.value = '';
 
-    if (!adminSupabase) {
-      alert('Add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env to enable CSV import.');
-      return;
-    }
-
     const text  = await file.text();
     const lines = text.trim().split('\n').filter(l => l.trim());
     if (lines.length < 2) { alert('CSV has no data rows.'); return; }
@@ -162,17 +151,12 @@ export default function AdminTeachersView({ schoolId }: AdminCtx) {
         failed.push({ email: email || `row ${i + 1}`, reason: 'Missing name, email, or password' }); continue;
       }
 
-      const { data: ud, error: authErr } = await (adminSupabase as any).auth.admin.createUser({ email, password: pass, email_confirm: true });
-      if (authErr || !ud?.user) { failed.push({ email, reason: authErr?.message ?? 'Auth error' }); continue; }
-
-      const { error: dbErr } = await supabase.from('teachers').insert({
-        id: ud.user.id, school_id: schoolId,
-        name, email, role: 'teacher', subjects,
-        class_teacher_of: classOf || null,
+      const { data, error } = await supabase.functions.invoke('create-teacher', {
+        body: { name, email, password: pass, subjects, class_teacher_of: classOf || null },
       });
-      if (dbErr) {
-        await (adminSupabase as any).auth.admin.deleteUser(ud.user.id);
-        failed.push({ email, reason: dbErr.message }); continue;
+
+      if (error || !data?.success) {
+        failed.push({ email, reason: data?.error ?? error?.message ?? 'Failed' }); continue;
       }
       done++;
     }
